@@ -1,0 +1,11 @@
+#!/bin/bash
+
+VM_NAME="$1"
+NODE_SRC="$2"
+NODE_DEST="$3"
+VIRSH_OPTS="$4"
+
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+virsh --connect qemu+ssh://$NODE_SRC/system migrate $VIRSH_OPTS $VM_NAME qemu+ssh://$NODE_DEST/system
+

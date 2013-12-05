@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Get parameters
+NODE="$1"
+VM_NAME="$2"
+IMG_SRC="$3"
+DEST_DIR="$4"
+
+BACKING_IMG="$DEST_DIR/$VM_NAME.qcow2"
+
+# Set global variables
+SSH_USER='root'
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+# Create a qcow2 backing img file if it doesn't already exist
+if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ ! -e $BACKING_IMG ]'' ); then
+	ssh $SSH_USER@$NODE $SSH_OPTS "qemu-img create -f qcow2 -o backing_file=$IMG_SRC,backing_fmt=raw $BACKING_IMG >/dev/null"
+fi
