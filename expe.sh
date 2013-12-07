@@ -5,10 +5,9 @@ NB_HOSTING_NODES="$1"
 NB_VMS_PER_NODE="$2"
 SSH_USER="$3"
 OUTPUT_DIR="$HOME/$4"
-BASE_IMG_DIR="$5"
-BACKING_IMG_DIR="$6"
-BASE_IMG_NAME="$7"
-VM_PREFIX="$8"
+VM_BASE_IMG_DIR="$5"
+VM_PREFIX="$6"
+VM_BACKING_IMG_DIR="$7"
 
 # Define vars
 NODES_LIST="$OUTPUT_DIR/nodes_list"
@@ -20,6 +19,7 @@ SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/d
 REPETITION=2
 RESULTS_DIR="results"
 
+IMG_TYPE="img"
 
 function migrate {
 
@@ -27,18 +27,34 @@ function migrate {
 	local NODE_SRC="$2"
 	local NODE_DEST="$3"
 
-	local SRC_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
+	local SRC_IMG="$VM_BASE_IMG_DIR/$VM_NAME.$IMG_TYPE"
 
-	# Execute the script "create_backing_img"
-	./create_backing_img $NODE_DEST $VM_NAME $SRC_IMG $BACKING_IMG_DIR
+	# Create a minimal img to the destination node
+	if [ -n "$VM_BACKING_IMG_DIR" ]; then
+		# Execute the script "create_backing_img"
+		./create_backing_img $NODE_DEST $VM_NAME $SRC_IMG $VM_BACKING_IMG_DIR
+	else
+		# If no shared storage only !
+		if [ "$VM_BASE_IMG_DIR" == "/tmp" ]; then
+			# Create a new empty img with the same size as the src img
+			IMG_SIZE=$(ssh $SSH_USER@$NODE_SRC $SSH_OPTS "du -b $SRC_IMG | cut -f1")
+			ssh $SSH_USER@$NODE_DEST $SSH_OPTS "dd if=/dev/zero of=$SRC_IMG bs=1 count=0 seek=$IMG_SIZE >/dev/null"
+		fi
+	fi
 
 	# Execute the script "migrate_vm"
-	./migrate_vm $VM_NAME $NODE_SRC $NODE_DEST $VIRSH_OPTS
+	./migrate_vm $VM_NAME $NODE_SRC $NODE_DEST "$VIRSH_OPTS"
 
-	# Delete backing img from source node
-	local BACKING_IMG="$BACKING_IMG_DIR/$VM_NAME.qcow2"
-	if ( ssh $SSH_USER@$NODE_SRC $SSH_OPTS ''[ ! -e $BACKING_IMG ]'' ); then
-		ssh $SSH_USER@$NODE_SRC $SSH_OPTS "rm -rf $BACKING_IMG"
+	# Delete img from source node
+	if [ -n "$VM_BACKING_IMG_DIR" ]; then
+		# Delete the backing img
+		ssh $SSH_USER@$NODE_SRC $SSH_OPTS "rm -rf $VM_BACKING_IMG_DIR/$VM_NAME.qcow2"
+	else
+		# If no shared storage only !
+		if [ "$VM_BASE_IMG_DIR" == "/tmp" ]; then
+			# Delete the src img
+			ssh $SSH_USER@$NODE_SRC $SSH_OPTS "rm -rf $SRC_IMG"
+		fi
 	fi
 }
 
@@ -166,17 +182,17 @@ function get_files_back {
 
 mkdir "$RESULTS_DIR"
  
+#VIRSH_OPTS=" --live --copy-storage-inc "
+#for (( i=1 ; i<=$REPETITION ; i++ )); do
+#	launch_migration_scenarios $RESULTS_DIR/storage-inc_scenarios-N$i
+#done
+
+#sleep 60
+
 VIRSH_OPTS=" --live --copy-storage-inc "
 for (( i=1 ; i<=$REPETITION ; i++ )); do
 	launch_migration_scenarios $RESULTS_DIR/storage-inc_scenarios-N$i
 done
-sleep 60
-
-VIRSH_OPTS=" --live --copy-storage-all "
-for (( i=1 ; i<=$REPETITION ; i++ )); do
-	launch_migration_scenarios $RESULTS_DIR/storage-all_scenarios-N$i
-done
-sleep 60
 
 get_files_back
 

@@ -11,7 +11,7 @@ if [ $# -gt 0 ] ; then
 	VM_BASE_IMG="$6"
 	VM_VCPU="$7"
 	VM_MEM="$8"
-	SHARED_STORAGE="${9}"
+	SHARED_STORAGE="$9"
 else
 	echo -e "This script requires parameters !"
 	exit
@@ -29,9 +29,10 @@ NODES_OK="$OUTPUT_DIR/nodes_ok"
 HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
 IPS_MACS="$OUTPUT_DIR/ips_macs"
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
-VM_BASE_IMG_DIR="/tmp" # Put the VM base img to node' local directory by default
-VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR" # Keep the backing imgs in local nodes directory
 VM_PREFIX="vm-"
+VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
+
+VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR" # Comment or set empty to disable backing imgs creation
 
 
 function create_output_files {
@@ -130,41 +131,49 @@ function mount_shared_storage {
 	chmod go+rwx $VM_BASE_IMG_DIR && chmod -R go+rw $VM_BASE_IMG_DIR
 }
 
-function create_all_imgs_in_node {
-	
+function duplicate_imgs_in_node {
+
 	local VM_INDEX=$1
 	local NODE="$2"
 
 	echo -en " Duplicating img base for each VM in node $NODE .."
 
-	for (( i=0 ; i<$NB_VMS_PER_NODE ; i++ )); do
-		local VM_NUM=$(($VM_INDEX + $i))
-		local VM_NAME="$VM_PREFIX$VM_NUM"
+	for (( i=0 ; i<=$NB_VMS_PER_NODE ; i++ )); do
+		local VM_NAME="$VM_PREFIX$(($VM_INDEX + $i))"
 		local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
-		if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ ! -e $DEST_IMG ]'' ); then
-			ssh $SSH_USER@$NODE $SSH_OPTS "cp $VM_BASE_IMG $NODE_IMG"
+		if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ ! -e $NODE_IMG ]'' ); then
+			ssh $SSH_USER@$NODE $SSH_OPTS "cp $VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME $NODE_IMG"
 		fi
-
-		# Execute the script "create_backing_img" 
-		create_backing_img $NODE $VM_NAME $NODE_IMG $VM_BACKING_IMG_DIR
 	done
 	ssh $SSH_USER@$NODE $SSH_OPTS "sync"
 
-	echo -e ". Done"
+	echo -e ". Done\n"
 }
 
-function create_all_imgs_in_nodes {
+function duplicate_imgs_in_nodes {
 
-        local NODE_LIST="$1"
+        local NODES="$1"
 	local VM_INDEX=1
 
-	echo -e "Duplicate $NB_VMS_PER_NODE imgs per node in $(cat $NODE_LIST|wc -l) nodes :"
-	for NODE in `cat $NODE_LIST`; do
-		create_all_imgs_in_node $VM_INDEX $NODE
+	echo -e "Duplicate $NB_VMS_PER_NODE imgs per node in $(cat $NODES|wc -l) nodes :"
+	for NODE in `cat $NODES`; do
+		duplicate_imgs_in_node $VM_INDEX $NODE &
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
+	wait
 }
 
+function duplicate_imgs_in_shared_storage {
+
+	local NB_VMS=$1
+
+	echo -e "Duplicate $NB_VMS imgs in shared storage :"
+	for (( i=1 ; i<=$NB_VMS ; i++ )); do
+		local VM_NAME="$VM_PREFIX$i"
+		local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
+		cp $VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME $NODE_IMG
+	done
+}
 
 function prepare_vms_in_node {
 
@@ -175,19 +184,53 @@ function prepare_vms_in_node {
 		local VM_NUM=$(($VM_INDEX + $i))
 		local IP=`cat $IPS_MACS | head -$VM_NUM | tail -1 | cut -f1`
 
+		if [ -n "$VM_BACKING_IMG_DIR" ]; then
+			local IMG_DIR="$VM_BACKING_IMG_DIR"
+		else
+			local IMG_DIR="$VM_BASE_IMG_DIR"
+		fi
+
 		# Execute the script "prepare_vm_in_node"
-                ./prepare_vm_in_node $VM_PREFIX$VM_NUM $NODE $IP $VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME
+                ./prepare_vm_in_node $VM_PREFIX$VM_NUM $NODE $IP $IMG_DIR
         done
 }
 
 function prepare_vms_in_nodes {
 
-	local HOSTING_NODES="$1"
+	local NODES="$1"
 	local VM_INDEX=1
 
-	echo -e "Preparing $NB_VMS_PER_NODE VMs per node in $(cat $HOSTING_NODES|wc -l) nodes :"
-	for NODE in `cat $HOSTING_NODES`; do
+	echo -e "Preparing $NB_VMS_PER_NODE VMs per node in $(cat $NODES|wc -l) nodes :"
+	for NODE in `cat $NODES`; do
 		prepare_vms_in_node $VM_INDEX $NODE &
+		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
+	done
+	wait
+}
+
+function create_backing_imgs_in_node {
+
+	local VM_INDEX=$1
+	local NODE="$2"
+
+	for (( i=0 ; i<$NB_VMS_PER_NODE ; i++ )); do
+		local VM_NUM=$(($VM_INDEX + $i))
+		local VM_NAME="$VM_PREFIX$VM_NUM"
+		local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
+
+                # Execute the script "create_backing_img"
+		./create_backing_img $NODE $VM_NAME $NODE_IMG $VM_BACKING_IMG_DIR
+        done
+}
+
+function create_backing_imgs_in_nodes {
+
+	local NODES="$1"
+	local VM_INDEX=1
+
+	echo -e "Creating $NB_VMS_PER_NODE backing imgs per node in $(cat $NODES|wc -l) hosting nodes :"
+	for NODE in `cat $NODES`; do
+		create_backing_imgs_in_node $VM_INDEX $NODE &
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
 	wait
@@ -203,23 +246,29 @@ function start_vms_in_node {
 		local VM_NAME="$VM_PREFIX$VM_NUM"
 		local MAC="$(cat $IPS_MACS | head -$VM_NUM | tail -1 | cut -f2)"
 
-		## Execute the script "start_vm_to_node"
-                ./start_vm_in_node $NODE $VM_BACKING_IMG_DIR/$VM_NAME.qcow2 $VM_MEM $MAC
+		if [ -n "$VM_BACKING_IMG_DIR" ]; then
+			local NODE_IMG="$VM_BACKING_IMG_DIR/$VM_NAME.qcow2"
+		else
+			local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
+		fi
+
+		## Execute the script "start_vm_in_node"
+                ./start_vm_in_node $NODE $NODE_IMG $VM_MEM $MAC
         done
 }
 
 function start_vms_in_nodes {
 
-	local NODE_LIST="$1"
+	local NODES="$1"
 	local VM_INDEX=1
 
-	echo -e "Starting $NB_VMS_PER_NODE VMs per node in $(cat $NODE_LIST|wc -l) nodes :"
-	for NODE in `cat $NODE_LIST`; do
+	echo -e "Starting $NB_VMS_PER_NODE VMs per node in $(cat $NODES|wc -l) nodes :"
+	for NODE in `cat $NODES`; do
 		start_vms_in_node $VM_INDEX $NODE &
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
 	wait
-	echo -ne "\nWaiting for VMs booting .." && sleep 180 && echo -e "\n"
+	echo -ne "\nWaiting for VMs booting .." && sleep $((30 + (2*2*$NB_VMS_PER_NODE*$NB_VMS_PER_NODE))) && echo -e "\n"
 }
 
 function start_expe {
@@ -237,7 +286,7 @@ function start_expe {
 	# Send and start experimentation script to the CTL node
 	echo -e "Send and execute experimentation script to the CTL :\n"
 	scp $SSH_OPTS $SCRIPT $SSH_USER@$NODE:~
-	ssh $SSH_USER@$NODE $SSH_OPTS "~$SSH_USER/$SCRIPT $NB_HOSTING_NODES $NB_VMS_PER_NODE $SSH_USER $(basename $OUTPUT_DIR) $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR $VM_BASE_IMG_NAME $VM_PREFIX"
+	ssh $SSH_USER@$NODE $SSH_OPTS "~$SSH_USER/$SCRIPT $NB_HOSTING_NODES $NB_VMS_PER_NODE $SSH_USER $(basename $OUTPUT_DIR) $VM_BASE_IMG_DIR $VM_PREFIX $VM_BACKING_IMG_DIR"
 }
 
 
@@ -246,8 +295,13 @@ deploy_ctl
 deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then mount_shared_storage ; fi
 define_hosting_nodes
-./send_vm_to_node_list $NODES_OK $VM_BASE_IMG $VM_BASE_IMG_DIR
-duplicate_img_for_each_vm_in_nodes $NODES_OK
+./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
+if [ -n "$SHARED_STORAGE" ]; then
+	duplicate_imgs_in_nodes $HOSTING_NODES
+else
+	duplicate_imgs_in_shared_storage $(($NB_VMS_PER_NODE*$(cat $HOSTING_NODES|wc -l)))
+fi
+if [ -n "$VM_BACKING_IMG_DIR" ]; then create_backing_imgs_in_nodes $HOSTING_NODES ; fi
 prepare_vms_in_nodes $HOSTING_NODES
 start_vms_in_nodes $HOSTING_NODES
 start_expe "./expe.sh"

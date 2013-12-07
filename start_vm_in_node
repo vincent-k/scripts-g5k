@@ -7,8 +7,9 @@ VM_MEM="$3"
 MAC="$4"
 
 # Set global parameters
-VM_NAME=`basename $IMG`
-FORMAT="${VM_NAME##*.}"
+VM_NAME=`basename $IMG | cut -d. -f1`
+FORMAT="${IMG##*.}"
+if [ "$FORMAT" != "qcow2" ]; then FORMAT='raw'; fi
 SSH_USER='root'
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 
