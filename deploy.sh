@@ -32,7 +32,7 @@ SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/d
 VM_PREFIX="vm-"
 VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
 
-VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR" # Comment or set empty to disable backing imgs creation
+#VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR" # Comment or set empty to disable backing imgs creation
 
 
 function create_output_files {
@@ -297,9 +297,9 @@ if [ -n "$SHARED_STORAGE" ]; then mount_shared_storage ; fi
 define_hosting_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
 if [ -n "$SHARED_STORAGE" ]; then
-	duplicate_imgs_in_nodes $HOSTING_NODES
-else
 	duplicate_imgs_in_shared_storage $(($NB_VMS_PER_NODE*$(cat $HOSTING_NODES|wc -l)))
+else
+	duplicate_imgs_in_nodes $HOSTING_NODES
 fi
 if [ -n "$VM_BACKING_IMG_DIR" ]; then create_backing_imgs_in_nodes $HOSTING_NODES ; fi
 prepare_vms_in_nodes $HOSTING_NODES
