@@ -11,7 +11,8 @@ if [ $# -gt 0 ] ; then
 	VM_BASE_IMG="$6"
 	VM_VCPU="$7"
 	VM_MEM="$8"
-	SHARED_STORAGE="$9"
+	BACKING_IMGS="$9"
+	SHARED_STORAGE="${10}"
 else
 	echo -e "This script requires parameters !"
 	exit
@@ -31,8 +32,7 @@ IPS_MACS="$OUTPUT_DIR/ips_macs"
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 VM_PREFIX="vm-"
 VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
-
-#VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR" # Comment or set empty to disable backing imgs creation
+if [ "$BACKING_IMGS" == "YES" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/backing"; fi
 
 
 function create_output_files {
@@ -127,6 +127,9 @@ function mount_shared_storage {
 	VM_BASE_IMG_DIR="/data/$USERNAME"
 	VM_BASE_IMG_DIR+="_$SHARED_STORAGE"
 
+	# Define backing img directory if necessary
+	if [ "$BACKING_IMGS" == "YES" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/backing"; fi
+
 	# Give it more permissions
 	chmod go+rwx $VM_BASE_IMG_DIR && chmod -R go+rw $VM_BASE_IMG_DIR
 }
@@ -210,11 +213,18 @@ function create_backing_imgs_in_node {
 
 	local VM_INDEX=$1
 	local NODE="$2"
+	local NODE_IMG="$VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME"
+
+	# Create remote backing dir
+	ssh $SSH_USER@$NODE $SSH_OPTS "mkdir $VM_BACKING_IMG_DIR"
 
 	for (( i=0 ; i<$NB_VMS_PER_NODE ; i++ )); do
 		local VM_NUM=$(($VM_INDEX + $i))
 		local VM_NAME="$VM_PREFIX$VM_NUM"
-		local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
+
+		if [ ! -n "$VM_BACKING_IMG_DIR" ]; then
+			local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
+		fi
 
                 # Execute the script "create_backing_img"
 		./create_backing_img $NODE $VM_NAME $NODE_IMG $VM_BACKING_IMG_DIR

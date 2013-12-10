@@ -45,14 +45,15 @@ function migrate {
 	# Execute the script "migrate_vm"
 	./migrate_vm $VM_NAME $NODE_SRC $NODE_DEST "$VIRSH_OPTS"
 
-	# Delete img from source node
+	# Delete base img/backing img from source node
 	if [ -n "$VM_BACKING_IMG_DIR" ]; then
-		# Delete the backing img
-		ssh $SSH_USER@$NODE_SRC $SSH_OPTS "rm -rf $VM_BACKING_IMG_DIR/$VM_NAME.qcow2"
+		# If backing img is not on shared storage
+		if [ "$VM_BACKING_IMG_DIR" == "/tmp" ]; then
+			ssh $SSH_USER@$NODE_SRC $SSH_OPTS "rm -rf $VM_BACKING_IMG_DIR/$VM_NAME.qcow2"
+		fi
 	else
-		# If no shared storage only !
+		# If base img is not on shared storage
 		if [ "$VM_BASE_IMG_DIR" == "/tmp" ]; then
-			# Delete the src img
 			ssh $SSH_USER@$NODE_SRC $SSH_OPTS "rm -rf $SRC_IMG"
 		fi
 	fi

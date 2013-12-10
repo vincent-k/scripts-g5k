@@ -56,9 +56,9 @@ function deploy_nodes {
 	# Nodes reservation
 	echo -e "Nodes reservation .."
 	if [ -n "$RESERVATION" ]; then
-		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT $CTL_NODE_CLUSTER $CLUSTER $NB_VMS_PER_NODE $CTL_NODE_IMG $IMG_NODES $VM_IMG $VM_VCPU $VM_MEM $SHARED_STORAGE" 2>&1)
+		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT $CTL_NODE_CLUSTER $CLUSTER $NB_VMS_PER_NODE $CTL_NODE_IMG $IMG_NODES $VM_IMG $VM_VCPU $VM_MEM $BACKING_IMGS $SHARED_STORAGE" 2>&1)
 	else
-		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT $CTL_NODE_CLUSTER $CLUSTER $NB_VMS_PER_NODE $CTL_NODE_IMG $IMG_NODES $VM_IMG $VM_VCPU $VM_MEM $SHARED_STORAGE" 2>&1)
+		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT $CTL_NODE_CLUSTER $CLUSTER $NB_VMS_PER_NODE $CTL_NODE_IMG $IMG_NODES $VM_IMG $VM_VCPU $VM_MEM $BACKING_IMGS $SHARED_STORAGE" 2>&1)
 	fi
 
 	# Get the JOB_ID of reservation
