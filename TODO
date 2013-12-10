@@ -7,18 +7,18 @@ Remplacer par un "OK" quand l'item est adressé, "KO" quand ca n'a pas de sens (
 
 Concernant les VMs:
 
-- Augmentation de la taille de l'image (au moins 5Go ?). Garder de petites images (2/3 Go pour tests rapide)
-- déclaration des proxys dans les VMs:
+OK Augmentation de la taille de l'image (au moins 5Go ?). Garder de petites images (2/3 Go pour tests rapide)
+OK déclaration des proxys dans les VMs:
 - installation d'une workload dans les VMs:
-  - environnement graphique
-  - sources kernel,
-  - env. de compilation C
+  OK environnement graphique => On considère des VMs desktops pour le dev.
+  OK env. de compilation C
+  - sources kernel
   - Au boot, les VMs compilent le kernel par défaut
   - on stockera le temps de compilation du noyau
   - (penser à un/deux scripts qui lance la workload sur une VM donnée si besoin)
-  => On considère des VMs desktops pour le dev.
-- Augmenter la conso mémoire des VMs 2Go ?
-- Peut-être 2 vCPUs également (avec affinité pCPU/vCPU) pour tester d'autres configurations.
+OK (ajustable) Augmenter la conso mémoire des VMs 2Go ?
+OK (ajustable) Peut-être 2 vCPUs également (avec affinité pCPU/vCPU) pour tester d'autres configurations.
+- Mapper 1 vcpu par pcpu :  cpuaffinity dans libvirt (virsh vcpupin)
 
 Concernant l'expérimentation:
 - Rajouter le boot du noeud destination (kaboot ? & co)
@@ -30,4 +30,3 @@ Concernant l'expérimentation:
 - Faire des migrations "asymmétrique": pour le moment on d'un noeud à un noeud. Dans la pratique, si on branche des noeuds plus récents, ils stockeront plus que le contenu d'un ancien noeud. L'équivalent de 1.5 ou de 2 anciens noeuds par exemple.
 - On peut faire des evals à petite échelles pour tester rapidement des ordonnancements différent. Faire une grosse eval de temps en temps permet juste de s'assurer le plus tôt possible que l'environnement est toujours ok.
 - Test de la saturation inter-link Nancy => Attention dimensionnement
-- Mapper 1 vcpu par pcpu :  cpuaffinity dans libvirt (virsh vcpupin)
