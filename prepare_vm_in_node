@@ -46,7 +46,7 @@ ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$RESOLV_CONF\" > /mnt/etc/resolv.conf"
 
 # Copy config files
 ssh $SSH_USER@$NODE $SSH_OPTS "cp /etc/ssh/ssh_config /mnt/etc/ssh/"
-ssh $SSH_USER@$NODE $SSH_OPTS "cp /root/.ssh/* /mnt/root/.ssh/"
+ssh $SSH_USER@$NODE $SSH_OPTS "rm -rf /mnt/root/.ssh && cp -r /root/.ssh /mnt/root/"
 
 # Unmount and disconnect partition
 ssh $SSH_USER@$NODE $SSH_OPTS "sudo umount /mnt"
