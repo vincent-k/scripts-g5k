@@ -253,7 +253,7 @@ function start_vms_in_node {
 		fi
 
 		## Execute the script "start_vm_in_node"
-                ./start_vm_in_node $NODE $NODE_IMG $VM_MEM $MAC
+                ./start_vm_in_node $NODE $NODE_IMG $VM_VCPU $VM_MEM $MAC
         done
 }
 

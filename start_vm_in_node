@@ -3,8 +3,9 @@
 # Get parameters
 NODE="$1"
 IMG="$2"
-VM_MEM="$3"
-MAC="$4"
+VCPU="$3"
+MEM="$4"
+MAC="$5"
 
 # Set global parameters
 VM_NAME=`basename $IMG | cut -d. -f1`
@@ -15,5 +16,5 @@ SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/d
 
 # Start VM
 echo -ne "* Start $VM_NAME to node $NODE .."
-ssh $SSH_USER@$NODE $SSH_OPTS "virt-install --name $VM_NAME --ram $VM_MEM --vcpus 1 --disk path=$IMG,format=$FORMAT,cache=none --network bridge:br0,mac=$MAC --nographics --virt-type kvm --noautoconsole --import >/dev/null"
+ssh $SSH_USER@$NODE $SSH_OPTS "virt-install --name $VM_NAME --ram $MEM --vcpus $VCPU --disk path=$IMG,format=$FORMAT,cache=none --network bridge:br0,mac=$MAC --nographics --virt-type kvm --noautoconsole --import >/dev/null"
 echo -e ". DONE"
