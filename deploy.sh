@@ -136,8 +136,6 @@ function duplicate_imgs_in_node {
 	local VM_INDEX=$1
 	local NODE="$2"
 
-	echo -en " Duplicating img base for each VM in node $NODE .."
-
 	for (( i=0 ; i<=$NB_VMS_PER_NODE ; i++ )); do
 		local VM_NAME="$VM_PREFIX$(($VM_INDEX + $i))"
 		local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
@@ -147,7 +145,7 @@ function duplicate_imgs_in_node {
 	done
 	ssh $SSH_USER@$NODE $SSH_OPTS "sync"
 
-	echo -e ". Done\n"
+	echo -e " $NODE DONE\n"
 }
 
 function duplicate_imgs_in_nodes {

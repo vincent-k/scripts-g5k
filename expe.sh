@@ -182,13 +182,6 @@ function get_files_back {
 
 mkdir "$RESULTS_DIR"
  
-#VIRSH_OPTS=" --live --copy-storage-inc "
-#for (( i=1 ; i<=$REPETITION ; i++ )); do
-#	launch_migration_scenarios $RESULTS_DIR/storage-inc_scenarios-N$i
-#done
-
-#sleep 60
-
 VIRSH_OPTS=" --live --copy-storage-inc "
 for (( i=1 ; i<=$REPETITION ; i++ )); do
 	launch_migration_scenarios $RESULTS_DIR/storage-inc_scenarios-N$i

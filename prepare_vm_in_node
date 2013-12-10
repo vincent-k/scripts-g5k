@@ -13,8 +13,6 @@ SSH_USER='root'
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 DOMAIN=`hostname | cut -d. -f2`.grid5000.fr
 
-echo -ne "* Prepare $VM_NAME in node $NODE .."
-
 # Connect img to the system and mount it
 ## Backing img per VM
 if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -e $IMG_DIR/$VM_NAME.qcow2 ]'' ); then
@@ -60,4 +58,4 @@ else
 fi
 ssh $SSH_USER@$NODE $SSH_OPTS "sync"
 
-echo -e ". DONE"
+echo -e " $VM_NAME in node $NODE DONE"
