@@ -19,6 +19,7 @@ VM_MEM=512
 VM_IMG='/home/vinkherbache/images/debian.img'
 NETWORK='slash_22=1'
 NB_VMS_PER_NODE=16
+BACKING_IMGS="YES"
 SHARED_STORAGE=20 # 1 chunk => 10Go
 ######################################################
 
