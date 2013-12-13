@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+from sys import *
+from os.path import *
+import BaseHTTPServer
+import re
+from urlparse import urlparse
+tokens = []
+port = 54398
+host = ""
+verbose = False
+
+class StoppableHttpServer (BaseHTTPServer.HTTPServer):
+    
+    def serve_forever (self):        
+        self.stop = False
+        while not self.stop:
+            self.handle_request()
+
+class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+
+    def log_message( self, format, *args ):
+        pass
+
+    def do_GET(self):        
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()        
+        self.wfile.write("\n".join(tokens))
+
+    def do_POST(self):        
+        token = urlparse(self.path).path[1:]        
+        global tokens
+        global verbose
+        if token in tokens:
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()                    
+            tokens.remove(token)
+            if (verbose):
+                print("Got notification '" + token + "'. " + str(len(tokens)) + " left")
+            if len(tokens) == 0:
+                self.server.stop = True
+        else:
+            if (verbose):
+                print("Unexpected notification '" + token + "'")
+            self.send_response(404)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write("Unknown token '" + token + "'\n")         
+
+def readToken(path):
+    global tokens
+    tokens = set()
+    fd = open(path)
+    while True:
+        t = fd.readline()
+        if not t : break
+        if t in tokens: return None
+        if (len(t) > 1):
+            tokens.add(t.rstrip('\n'));
+    fd.close()    
+    return tokens
+
+if len(argv) < 3 or argv[0] in ["-h", "--help"]:
+    print("rWait url tokenfile")
+    exit(1)
+
+if re.search(":", argv[1]) != None:
+    host,port = argv[1].split(":")
+    port = int(port)
+
+tokenfile = argv[2]
+if not isfile(tokenfile):
+    stderr.write("No such file or directory: " + tokenfile + "\n")
+    exit(1)
+
+readToken(tokenfile)
+server_class = StoppableHttpServer
+httpd = server_class((host, port), MyHandler)
+print("Waiting on " + host + ":" + str(port) + " for " + str(len(tokens)) + " notifications")
+try:
+    httpd.serve_forever()
+except KeyboardInterrupt:
+    pass
+httpd.server_close()
