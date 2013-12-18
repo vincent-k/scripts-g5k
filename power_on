@@ -1,0 +1,12 @@
+#!/bin/bash
+
+NODE="$1"
+
+if [ -n "$NODE" ]; then
+
+	if [ -f "$NODE" ]; then
+		kapower3 --on -f $NODE
+	else
+		kapower3 --on -m $NODE
+	fi
+fi
