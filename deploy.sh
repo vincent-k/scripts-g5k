@@ -255,7 +255,7 @@ function start_vms_in_nodes {
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
 	wait
-	echo -ne "\nWaiting for VMs booting .." && sleep $((30 + (2*2*$NB_VMS_PER_NODE*$NB_VMS_PER_NODE))) && echo -e "\n"
+	#echo -ne "\nWaiting for VMs booting .." && sleep $((30 + (2*2*$NB_VMS_PER_NODE*$NB_VMS_PER_NODE))) && echo -e "\n"
 }
 
 function start_expe {
@@ -274,6 +274,16 @@ function start_expe {
 	echo -e "Send and execute experimentation script to the CTL :\n"
 	scp $SSH_OPTS $SCRIPT $SSH_USER@$NODE:~
 	ssh $SSH_USER@$NODE $SSH_OPTS "~$SSH_USER/$SCRIPT $NB_HOSTING_NODES $NB_VMS_PER_NODE $SSH_USER $(basename $OUTPUT_DIR) $VM_BASE_IMG_DIR $VM_PREFIX $VM_BACKING_IMG_DIR"
+}
+
+function wait_for_vms_to_boot {
+
+	local VMS="$1"
+	local CTL_NODE_NAME="$(cat $CTL_NODE)"
+
+	send_to_ctl $VMS
+	send_to_ctl ./rWait
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "python ~$SSH_USER/rWait $(host `cat $CTL_NODE` | awk '{print $4;}') ~$SSH_USER/$(basename $VMS)"
 }
 
 
