@@ -113,11 +113,11 @@ function mount_shared_storage {
 	fi
 
 	# Change the remote directory to the shared storage (base img)
-	VM_BASE_IMG_DIR="/data/$USERNAME"
+	VM_BASE_IMG_DIR="/data/$(whoami)"
 	VM_BASE_IMG_DIR+="_$SHARED_STORAGE"
 
 	# Define backing img directory if necessary
-	if [ "$BACKING_IMGS" == "YES" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/backing"; fi
+	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
 
 	# Give it more permissions
 	chmod go+rwx $VM_BASE_IMG_DIR && chmod -R go+rw $VM_BASE_IMG_DIR
@@ -181,7 +181,7 @@ function prepare_vms_in_node {
 		fi
 
 		# Execute the script "prepare_vm_in_node"
-                ./prepare_vm_in_node $VM_PREFIX$VM_NUM $NODE $IP $IMG_DIR
+                ./prepare_vm_in_node $VM_PREFIX$VM_NUM $NODE $IP $IMG_DIR "$(cat $CTL_NODE)"
         done
 }
 
@@ -196,6 +196,8 @@ function prepare_vms_in_nodes {
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
 	wait
+
+	cat $IPS_MACS | head -$(($(cat $NODES | wc -l) * $NB_VMS_PER_NODE)) | cut -f1 > $VMS_IPS
 }
 
 function create_backing_imgs_in_node {
