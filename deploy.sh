@@ -293,15 +293,16 @@ deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then mount_shared_storage ; fi
 define_hosting_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
-if [ -n "$SHARED_STORAGE" ]; then
-	duplicate_imgs_in_shared_storage $(($NB_VMS_PER_NODE*$(cat $HOSTING_NODES|wc -l)))
-else
-	duplicate_imgs_in_nodes $HOSTING_NODES
-fi
+if [ ! -n "$SHARED_STORAGE" ]; then duplicate_imgs_in_nodes $HOSTING_NODES ; fi
 if [ -n "$VM_BACKING_IMG_DIR" ]; then create_backing_imgs_in_nodes $HOSTING_NODES ; fi
 prepare_vms_in_nodes $HOSTING_NODES
 start_vms_in_nodes $HOSTING_NODES
-start_expe "./expe.sh"
+wait_for_vms_to_boot $VMS_IPS
+
+send_to_ctl $OUTPUT_DIR
+
+#start_expe "./expe.sh"
+
 
 echo -e "\nALL FINISHED !"
 
