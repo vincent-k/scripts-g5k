@@ -1,33 +1,7 @@
 #!/bin/bash
 
-######################################################
-TIME='5:00'
-RESERVATION='2013-12-09 13:00:00'
-######################################################
-
-###################### CTL NODE ######################
-CTL_NODE_CLUSTER='helios'
-CTL_NODE_IMG='debian-sid-qemu'
-####################### NODES ########################
-NB_NODES=10
-CLUSTER='suno'
-IMG_NODES='debian-sid-qemu'
-######################## VMS #########################
-VM_VCPU=1
-VM_MEM=512
-#VM_IMG='/home/vinkherbache/images/wheezy-x64-base.qcow2'
-VM_IMG='/home/vinkherbache/images/debian.img'
-NETWORK='slash_22=1'
-NB_VMS_PER_NODE=16
-BACKING_IMGS="YES"
-SHARED_STORAGE=20 # 1 chunk => 10Go
-######################################################
-
-######################################################
-DEPLOY_SCRIPT='deploy.sh'
-######################################################
-
-
+# Get variables from config file
+. ./config
 
 function reserve_storage {
 
@@ -57,9 +31,9 @@ function deploy_nodes {
 	# Nodes reservation
 	echo -e "Nodes reservation .."
 	if [ -n "$RESERVATION" ]; then
-		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT $CTL_NODE_CLUSTER $CLUSTER $NB_VMS_PER_NODE $CTL_NODE_IMG $IMG_NODES $VM_IMG $VM_VCPU $VM_MEM $BACKING_IMGS $SHARED_STORAGE" 2>&1)
+		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
 	else
-		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT $CTL_NODE_CLUSTER $CLUSTER $NB_VMS_PER_NODE $CTL_NODE_IMG $IMG_NODES $VM_IMG $VM_VCPU $VM_MEM $BACKING_IMGS $SHARED_STORAGE" 2>&1)
+		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
 	fi
 
 	# Get the JOB_ID of reservation

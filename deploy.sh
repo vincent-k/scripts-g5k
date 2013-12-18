@@ -1,45 +1,26 @@
 #!/bin/bash
 
-# Get options from cmdline
-if [ $# -gt 0 ] ; then
+# Get variables from config file
+. ./config
 
-	CTL_NODE_CLUSTER="$1"
-	CLUSTER="$2"
-	NB_VMS_PER_NODE="$3"
-	IMG_CTL="$4"
-	IMG_NODES="$5"
-	VM_BASE_IMG="$6"
-	VM_VCPU="$7"
-	VM_MEM="$8"
-	BACKING_IMGS="$9"
-	SHARED_STORAGE="${10}"
-else
-	echo -e "This script requires parameters !"
-	exit
+if [ -n $SHARED_STORAGE ]; then
+	SHARED_STORAGE="$1"
 fi
 
-# Set some variables
-USERNAME=`whoami`
-#SSH_USER="$USERNAME"
+if [ -n "$BACKING_DIR" ]; then
+	VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR";
+fi
+
+# Set ssh parameters
 SSH_USER="root"
-OUTPUT_DIR="`pwd`/files"
-CTL_NODE="$OUTPUT_DIR/ctl_node"
-VM_BASE_IMG_NAME=`basename $VM_BASE_IMG`
-NODES_LIST="$OUTPUT_DIR/nodes_list"
-NODES_OK="$OUTPUT_DIR/nodes_ok"
-HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
-IPS_MACS="$OUTPUT_DIR/ips_macs"
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
-VM_PREFIX="vm-"
-VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
-if [ "$BACKING_IMGS" == "YES" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/backing"; fi
 
 
 function create_output_files {
 
 	# Clean/Create the output directory
 	if [ -d "$OUTPUT_DIR" ]; then
-		rm -rf $OUTPUT_DIR/* && rm -rf $OUTPUT_DIR/.*
+		rm -rf $OUTPUT_DIR/* && rm -rf $OUTPUT_DIR/.* >/dev/null 2>&1
 	else
 		mkdir $OUTPUT_DIR
 	fi
