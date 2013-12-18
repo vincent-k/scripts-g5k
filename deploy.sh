@@ -153,18 +153,6 @@ function duplicate_imgs_in_nodes {
 	wait
 }
 
-function duplicate_imgs_in_shared_storage {
-
-	local NB_VMS=$1
-
-	echo -e "Duplicate $NB_VMS imgs in shared storage :"
-	for (( i=1 ; i<=$NB_VMS ; i++ )); do
-		local VM_NAME="$VM_PREFIX$i"
-		local NODE_IMG="$VM_BASE_IMG_DIR/$VM_NAME.${VM_BASE_IMG##*.}"
-		cp $VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME $NODE_IMG
-	done
-}
-
 function prepare_vms_in_node {
 
 	local VM_INDEX=$1
