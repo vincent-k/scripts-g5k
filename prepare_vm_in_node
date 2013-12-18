@@ -5,6 +5,7 @@ VM_NAME="$1"
 NODE="$2"
 IP="$3"
 IMG_DIR="$4"
+CTL_NODE_NAME="$5"
 
 BASE_IMG_TYPE="img"
 
@@ -19,44 +20,54 @@ if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -e $IMG_DIR/$VM_NAME.qcow2 ]'' ); then
 	ssh $SSH_USER@$NODE $SSH_OPTS "qemu-nbd --connect=/dev/nbd0 $IMG_DIR/$VM_NAME.qcow2 >/dev/null"
 	sleep 5
 	ssh $SSH_USER@$NODE $SSH_OPTS "mount /dev/nbd0p1 /mnt"
-## Raw img per VM
-elif ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -e $IMG_DIR/$VM_NAME.img ]'' ); then
-	ssh $SSH_USER@$NODE $SSH_OPTS "kpartx -a $IMG_DIR/$VM_NAME.img >/dev/null"
-	sleep 1
-	ssh $SSH_USER@$NODE $SSH_OPTS "mount /dev/mapper/loop0p1 /mnt"
-## Shared raw img
+## Raw img (vm local copies or single shared img)
 else
-	VM_IMG=`ls -1 $IMG_DIR | grep $BASE_IMG_TYPE`
+	# Local copies
+	if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -e $IMG_DIR/$VM_NAME.img ]'' ); then	
+		VM_IMG="$IMG_DIR/$VM_NAME.img"
+	# Single shared img
+	else
+		VM_IMG=`ls -1 $IMG_DIR | grep $BASE_IMG_TYPE`
+	fi
+
 	ssh $SSH_USER@$NODE $SSH_OPTS "kpartx -a $VM_IMG >/dev/null"
 	sleep 1
 	ssh $SSH_USER@$NODE $SSH_OPTS "mount /dev/mapper/loop0p1 /mnt"
 fi
 
 # Create the network file
-NET_CONF=$(echo -e "auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet static\naddress $IP\n")
-NET_CONF+="$(g5k-subnets -a | awk '{ print "\nnetmask "$3 "\nbroadcast "$2 "\ngateway "$4 }')"
+NET_CONF="auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet static\naddress $IP\n"
+NET_CONF+="$(g5k-subnets -a | awk '{ print "netmask "$3 "\nbroadcast "$2 "\ngateway "$4 }')"
 ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$NET_CONF\" > /mnt/etc/network/interfaces"
 
 # Create resolv.conf file
-RESOLV_CONF=$(echo -e "domain $DOMAIN\nsearch $DOMAIN\n")
+RESOLV_CONF="domain $DOMAIN\nsearch $DOMAIN\n"
 RESOLV_CONF+="$(g5k-subnets -a | awk '{ print "\nnameserver "$7 }')"
 ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$RESOLV_CONF\" > /mnt/etc/resolv.conf"
 
 # Create a profile script to set proxy environment variables
-PROXY_ENV=$(echo -e "export http_proxy='http://proxy:3128'\n")
-PROXY_ENV+=$(echo -e "\nexport https_proxy='http://proxy:3128'")
+PROXY_ENV="export http_proxy='http://proxy:3128'\n"
+PROXY_ENV+="export https_proxy='http://proxy:3128'"
 ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$PROXY_ENV\" > /mnt/etc/profile.d/proxy.sh"
 
 # Copy config files
 ssh $SSH_USER@$NODE $SSH_OPTS "cp /etc/ssh/ssh_config /mnt/etc/ssh/"
 ssh $SSH_USER@$NODE $SSH_OPTS "rm -rf /mnt/root/.ssh && cp -r /root/.ssh /mnt/root/"
 
+# Send the rNotify python script and run it on boot
+if [ -n $CTL_NODE_NAME ]; then
+	scp $SSH_OPTS ./rNotify $SSH_USER@$NODE:/mnt/opt/
+	BOOT_FILE='#!/bin/sh\n\n'
+	BOOT_FILE+="python /opt/rNotify $(host $CTL_NODE_NAME | awk '{print $4;}') $IP"
+	ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$BOOT_FILE\" > /mnt/etc/rc.local"
+fi
+
 # Unmount and disconnect partition
-ssh $SSH_USER@$NODE $SSH_OPTS "sudo umount /mnt"
-## Backing img per VM
+ssh $SSH_USER@$NODE $SSH_OPTS "sync && sudo umount /mnt"
+## Qcow img type (.qcow2)
 if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -e $IMG_DIR/$VM_NAME.qcow2 ]'' ); then
 	ssh $SSH_USER@$NODE $SSH_OPTS "qemu-nbd -d /dev/nbd0 >/dev/null"
-## Raw img (local or shared)
+## Raw img type (.img)
 else
 	ssh $SSH_USER@$NODE $SSH_OPTS "kpartx -d /dev/loop0 >/dev/null"
 	ssh $SSH_USER@$NODE $SSH_OPTS "losetup -d /dev/loop0 >/dev/null"
