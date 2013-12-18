@@ -90,6 +90,14 @@ function define_hosting_nodes {
 	NB_HOSTING_NODES=$(cat $HOSTING_NODES | wc -l)
 }
 
+function send_to_ctl {
+
+	local SRC="$1"
+	local DEST_DIR="$2"
+
+	scp $SSH_OPTS -r $SRC $SSH_USER@$(cat $CTL_NODE):$DEST_DIR
+}
+
 function mount_shared_storage {
 
 	# Mount storage in all nodes
