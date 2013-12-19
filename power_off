@@ -10,3 +10,6 @@ if [ -n "$NODE" ]; then
 		kapower3 --off -m $NODE
 	fi
 fi
+
+# Wait 30s
+sleep 30
