@@ -286,6 +286,18 @@ function wait_for_vms_to_boot {
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "python ~$SSH_USER/rWait $(host `cat $CTL_NODE` | awk '{print $4;}') ~$SSH_USER/$(basename $VMS)"
 }
 
+function start_workload_in_vms {
+	
+	local WORKLOAD_SCRIPT="$1"
+	local SCRIPT_OPTIONS="$2"
+	local RESULTS_DIR="$3"
+	local VMS="$4"
+	
+	echo -e "Starting workload in $(cat $VMS | wc -l) VMs :"
+	for IP in `cat $VMS`; do
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP &
+	done
+}
 
 create_output_files
 deploy_ctl
@@ -299,7 +311,9 @@ prepare_vms_in_nodes $HOSTING_NODES
 start_vms_in_nodes $HOSTING_NODES
 wait_for_vms_to_boot $VMS_IPS
 
-send_to_ctl $OUTPUT_DIR
+# Start workload in VMs and get results
+RESULTS_DIR="/home/vinkherbache/workload_results" && mkdir $RESULTS_DIR
+start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR $VMS_IPS
 
 #start_expe "./expe.sh"
 
