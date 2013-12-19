@@ -11,10 +11,6 @@ if [ -n "$BACKING_DIR" ]; then
 	VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR";
 fi
 
-# Set ssh parameters
-SSH_USER="root"
-SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
-
 
 function create_output_files {
 
