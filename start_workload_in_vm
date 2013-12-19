@@ -1,0 +1,26 @@
+#!/bin/bash
+
+WORKLOAD_SCRIPT="$1"
+SCRIPT_OPTIONS="$2"
+RESULTS_DIR="$3"
+VM_IP="$4"
+
+# Source config file variables
+. ./config
+
+VM_NAME=$(cat $IPS_NAMES | grep $VM_IP | cut -f 1)
+
+
+# Send script to the VM
+scp $SSH_OPTS $WORKLOAD_SCRIPT $SSH_USER@$VM_IP: >/dev/null
+
+# Start the remote task in background
+#ssh $SSH_USER@$VM_IP "~$SSH_USER/$(basename $WORKLOAD_SCRIPT) $SCRIPT_OPTIONS /tmp/results $(host $CTL_NODE_NAME | awk '{print $4;}')" &
+ssh $SSH_OPTS $SSH_USER@$VM_IP "~$SSH_USER/$(basename $WORKLOAD_SCRIPT) $SCRIPT_OPTIONS /tmp/results" &
+
+wait
+
+echo -e " Workload terminated in VM $VM_NAME ($VM_IP)"
+
+# Get the results
+scp $SSH_OPTS $SSH_USER@$VM_IP:/tmp/results $RESULTS_DIR/$VM_NAME >/dev/null
