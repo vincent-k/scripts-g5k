@@ -65,6 +65,8 @@ function migrate_par {
 	local NODE_DEST="$2"
 	local MIGRATE_DIR="$3"
 
+	./power_on $NODE_DEST
+
 	mkdir "$MIGRATE_DIR"
 	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
 		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
@@ -72,6 +74,8 @@ function migrate_par {
 	done
 
 	wait
+
+	./power_off $NODE_SRC
 }
 
 function migrate_seq {
@@ -79,12 +83,16 @@ function migrate_seq {
 	local NODE_SRC="$1"
         local NODE_DEST="$2"
 	local MIGRATE_DIR="$3"
+	
+	./power_on $NODE_DEST
 
 	mkdir "$MIGRATE_DIR"
         for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
 		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
                 migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date)" | tee -a $MIGRATE_DIR/$VM
         done
+	
+	./power_off $NODE_SRC
 }
 
 function scenario_1 {
