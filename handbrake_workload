@@ -1,0 +1,30 @@
+#!/bin/bash
+
+VIDEO_SRC="$1"
+OUTPUT_FILE="$2"
+CTL_IP="$3"
+
+# Start encoding
+HandBrakeCLI -i $VIDEO_SRC -o /tmp/video_encoded.mp4 > /tmp/encoding_flow 2>/dev/null &
+PID=$!
+
+echo -e "$(date +%s)\tSTART" > $OUTPUT_FILE
+
+# Wait for encoding initialization
+sleep 10
+
+# Capture the fps rate every seconds
+while ps -p $PID > /dev/null; do
+	echo -e "$(date +%s)\t$(cat -v /tmp/encoding_flow | sed -e 's/M/\n/g' | tail -2 | head -1 | cut -d' ' -f8 | tail -c +2)" >> $OUTPUT_FILE
+	sleep 1
+done
+
+wait
+sync
+
+echo -e "$(date +%s)\tEND" >> $OUTPUT_FILE
+
+# Send a notification to the ctl
+if [ -n "$CTL_IP" ]; then
+	python /opt/rNotify $CTL_IP $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)
+fi
