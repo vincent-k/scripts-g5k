@@ -262,19 +262,18 @@ function start_vms_in_nodes {
 function start_expe {
 
 	local SCRIPT="$1"
-	NODE=$(cat $CTL_NODE)
 
 	# Send output directory to CTL node
-	scp $SSH_OPTS -r $OUTPUT_DIR $SSH_USER@$NODE:~
+	send_to_ctl $OUTPUT_DIR
 
 	# Send some scripts
-	scp $SSH_OPTS ./create_backing_img $SSH_USER@$NODE:~
-	scp $SSH_OPTS ./migrate_vm $SSH_USER@$NODE:~
+	send_to_ctl ./create_backing_img
+	send_to_ctl ./migrate_vm
 	
 	# Send and start experimentation script to the CTL node
 	echo -e "Send and execute experimentation script to the CTL :\n"
-	scp $SSH_OPTS $SCRIPT $SSH_USER@$NODE:~
-	ssh $SSH_USER@$NODE $SSH_OPTS "~$SSH_USER/$SCRIPT $NB_HOSTING_NODES $NB_VMS_PER_NODE $SSH_USER $(basename $OUTPUT_DIR) $VM_BASE_IMG_DIR $VM_PREFIX $VM_BACKING_IMG_DIR"
+	send_to_ctl $SCRIPT
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "~$SSH_USER/$SCRIPT $NB_HOSTING_NODES $NB_VMS_PER_NODE $SSH_USER $(basename $OUTPUT_DIR) $VM_BASE_IMG_DIR $VM_PREFIX $VM_BACKING_IMG_DIR"
 }
 
 function wait_for_vms_to_boot {
