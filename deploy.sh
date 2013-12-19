@@ -42,6 +42,8 @@ function create_output_files {
 	# Create/clean the other files
 	echo > "$NODES_OK"
 	echo > "$HOSTING_NODES"
+	echo > "$VMS_IPS"
+	echo > "$IPS_NAMES"
 }
 
 function deploy_ctl {
@@ -91,7 +93,7 @@ function send_to_ctl {
 	local SRC="$1"
 	local DEST_DIR="$2"
 
-	scp $SSH_OPTS -r $SRC $SSH_USER@$(cat $CTL_NODE):$DEST_DIR
+	scp $SSH_OPTS -r $SRC $SSH_USER@$(cat $CTL_NODE):$DEST_DIR > /dev/null
 }
 
 function mount_shared_storage {
@@ -166,6 +168,9 @@ function prepare_vms_in_node {
 
 		# Execute the script "prepare_vm_in_node"
                 ./prepare_vm_in_node $VM_PREFIX$VM_NUM $NODE $IP $IMG_DIR "$(cat $CTL_NODE)"
+
+		# Fill a file with ip/name values
+		echo -e "$VM_PREFIX$VM_NUM\t$IP" >> $IPS_NAMES
         done
 }
 
