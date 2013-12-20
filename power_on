@@ -2,14 +2,46 @@
 
 NODE="$1"
 
+
+function wait_for_boot {
+	local NODE="$1"
+
+	while ! ping -c 1 $NODE > /dev/null; do
+		sleep 2
+	done
+}
+
+
 if [ -n "$NODE" ]; then
 
+	START=$(date +%s)
+
 	if [ -f "$NODE" ]; then
-		kapower3 --on -f $NODE
+
+		# Boot nodes list
+		echo -en "Booting $(cat $NODE|wc -l) nodes .."
+		kapower3 --on -f $NODE >/dev/null
+
+		# Wait for boot of all nodes
+		for N in `cat $NODE`; do
+			wait_for_boot $N &
+		done
+		wait
+
+		END=$(date +%s)
+
+		echo -e ". done. (total boot time = $(($END - $START)))s"
+		
 	else
-		kapower3 --on -m $NODE
+		# Boot node
+		echo -en "Booting node '$NODE' .."
+		kapower3 --on -m $NODE >/dev/null
+
+		# Wait for boot
+		wait_for_boot $NODE
+
+		END=$(date +%s)
+
+		echo -e ". done. (boot time = $(($END - $START)))s"
 	fi
 fi
-
-# Wait two minutes
-sleep 120
