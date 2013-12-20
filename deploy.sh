@@ -196,7 +196,7 @@ function create_backing_imgs_in_node {
 	local NODE_IMG="$VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME"
 
 	# Create remote backing dir
-	ssh $SSH_USER@$NODE $SSH_OPTS "mkdir $VM_BACKING_IMG_DIR"
+	ssh $SSH_USER@$NODE $SSH_OPTS "mkdir $VM_BACKING_IMG_DIR 2>/dev/null"
 
 	for (( i=0 ; i<$NB_VMS_PER_NODE ; i++ )); do
 		local VM_NUM=$(($VM_INDEX + $i))
