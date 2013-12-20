@@ -12,18 +12,17 @@ OK déclaration des proxys dans les VMs:
 - installation d'une workload dans les VMs:
   OK environnement graphique => On considère des VMs desktops pour le dev.
   OK env. de compilation C
-  - sources kernel
-  - Au boot, les VMs compilent le kernel par défaut
-  - on stockera le temps de compilation du noyau
-  - (penser à un/deux scripts qui lance la workload sur une VM donnée si besoin)
+  OK utilisation de handbrake comme workload
+  OK creation d'un script pour recuperer le framerate (encodage video via handbrake)
+  OK (penser à un/deux scripts qui lance la workload sur une VM donnée si besoin)
 OK (ajustable) Augmenter la conso mémoire des VMs 2Go ?
 OK (ajustable) Peut-être 2 vCPUs également (avec affinité pCPU/vCPU) pour tester d'autres configurations.
 - Mapper 1 vcpu par pcpu :  cpuaffinity dans libvirt (virsh vcpupin)
 
 Concernant l'expérimentation:
-- Rajouter le boot du noeud destination (kaboot ? & co)
-- Rajouter l'extinction du noeud source une fois vide
-- Noter les temps de migration moyens
+OK Rajouter le boot du noeud destination (kaboot ? & co)
+OK Rajouter l'extinction du noeud source une fois vide
+OK Noter les temps de migration moyens
 - Noter les temps de boot des noeuds
 - Acceder à la BMC pour avoir la conso électrique ?
 - Experimentations de plus grande taille pour l'expe finale (equivalent d'un "plusieurs clusters")
