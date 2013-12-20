@@ -5,11 +5,10 @@ NODE="$1"
 if [ -n "$NODE" ]; then
 
 	if [ -f "$NODE" ]; then
-		kapower3 --off -f $NODE
+		echo -e "Powering off $((cat $NODE | wc -l)) nodes ..."
+		kapower3 --off -f $NODE >/dev/null
 	else
-		kapower3 --off -m $NODE
+		echo -e "Powering off node '$NODE' ..."
+		kapower3 --off -m $NODE >/dev/null
 	fi
 fi
-
-# Wait 30s
-sleep 30
