@@ -297,6 +297,7 @@ function start_workload_in_vms {
 	for IP in `cat $VMS`; do
 		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP &
 	done
+	wait
 }
 
 create_output_files
