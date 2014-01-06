@@ -24,19 +24,19 @@ NODES_OK="$OUTPUT_DIR/nodes_ok"
 # VMS
 VM_VCPU=2
 VM_MEM=4096
+NB_VMS_PER_NODE=2
 #VM_BASE_IMG='/home/vinkherbache/images/wheezy-x64-base.qcow2'
 #VM_BASE_IMG='/home/vinkherbache/images/debian.img'
 #VM_BASE_IMG='/home/vinkherbache/images/ubuntu_desktop.img'
 VM_BASE_IMG='/home/vinkherbache/images/ubuntu_desktop_10G.img'
-NB_VMS_PER_NODE=2
+VM_BASE_IMG_NAME=$(basename $VM_BASE_IMG)
+VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
 VM_PREFIX="vm-"
 BACKING_DIR="backing"
 IPS_MACS="$OUTPUT_DIR/ips_macs"
 IPS_NAMES="$OUTPUT_DIR/ips_names"
 VMS_IPS="$OUTPUT_DIR/vms_ips"
 HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
-VM_BASE_IMG_NAME=$(basename $VM_BASE_IMG)
-VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
 ###########################################################
 
 # Set ssh parameters
