@@ -1,30 +1,33 @@
 #!/bin/bash
 
 VIDEO_SRC="$1"
-OUTPUT_FILE="$2"
-CTL_IP="$3"
+REMOTE_USER="$2"
+REMOTE_IP="$3"
+REMOTE_OUTPUT_FILE="$4"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
 
 # Start encoding
 HandBrakeCLI -i $VIDEO_SRC -o /tmp/video_encoded.mp4 > /tmp/encoding_flow 2>/dev/null &
 PID=$!
 
-echo -e "$(date +%s)\tSTART" > $OUTPUT_FILE
+echo -e "$(date +%s)\tSTART" > /tmp/results
 
 # Wait for encoding initialization
 sleep 10
 
 # Capture the fps rate every seconds
 while ps -p $PID > /dev/null; do
-	echo -e "$(date +%s)\t$(cat -v /tmp/encoding_flow | sed -e 's/M/\n/g' | tail -2 | head -1 | cut -d' ' -f8 | tail -c +2)" >> $OUTPUT_FILE
+	echo -e "$(date +%s)\t$(cat -v /tmp/encoding_flow | sed -e 's/M/\n/g' | tail -2 | head -1 | cut -d' ' -f8 | tail -c +2)" >> /tmp/results
 	sleep 1
 done
 
 wait
 sync
 
-echo -e "$(date +%s)\tEND" >> $OUTPUT_FILE
+echo -e "$(date +%s)\tEND" >> /tmp/results
 
-# Send a notification to the ctl
-if [ -n "$CTL_IP" ]; then
-	python /opt/rNotify $CTL_IP $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)
-fi
+# Send results to the remote host
+sync
+scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:$REMOTE_OUTPUT_FILE >/dev/null
+
