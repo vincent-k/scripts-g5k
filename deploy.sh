@@ -65,6 +65,29 @@ function deploy_ctl {
 	fi
 }
 
+function deploy_nfs_server {
+
+	# Define the first node as NFS server
+	head -1 $NODES_LIST > $NFS_SRV
+	tail -$((`cat $NODES_LIST | wc -l` - 1)) > $NODES_LIST
+
+	# Deploy the NFS server
+	echo -e "################# NFS SERVER DEPLOYMENT ##################"
+	kadeploy3 -e $IMG_NODES -f $NFS_SRV --output-ok-nodes $NFS_SRV -k
+	echo -e "##########################################################\n"
+
+	# Quit if deployment failed
+	if [ `cat $NFS_SRV | uniq | grep $CLUSTER | wc -l` -eq 0 ]; then
+		echo -e "\nCANCELING !"
+		#oardel $OAR_JOB_ID
+		## Delete the storage reservation if exist
+		#if [ -n "$SHARED_STORAGE" ]; then
+		#	oardel $SHARED_STORAGE
+		#fi
+		exit
+	fi
+}
+
 function deploy_nodes {
 
 	# Deploy IMG_NODES to all the nodes and get list of nodes_ok
@@ -300,8 +323,12 @@ function start_workload_in_vms {
 	wait
 }
 
+
+## MAIN
+
 create_output_files
 deploy_ctl
+if [ -n "$NFS_SRV"];then deploy_nfs_server ; fi
 deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then mount_shared_storage ; fi
 define_hosting_nodes
