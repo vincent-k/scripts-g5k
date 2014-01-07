@@ -9,7 +9,7 @@ Concernant les VMs:
 
 OK Augmentation de la taille de l'image (au moins 5Go ?). Garder de petites images (2/3 Go pour tests rapide)
 OK déclaration des proxys dans les VMs:
-- installation d'une workload dans les VMs:
+OK installation d'une workload dans les VMs:
   OK environnement graphique => On considère des VMs desktops pour le dev.
   OK env. de compilation C
   OK utilisation de handbrake comme workload
@@ -24,8 +24,11 @@ OK Rajouter le boot du noeud destination (kaboot ? & co)
 OK Rajouter l'extinction du noeud source une fois vide
 OK Noter les temps de migration moyens
 OK Noter les temps de boot des noeuds
-- Integrer le workload et recuperer automatiquement les resultats
-- Acceder à la BMC pour avoir la conso électrique ?
+OK Integrer le workload et recuperer automatiquement les resultats
+OK Acceder à la BMC pour avoir la conso électrique ?
+OK Utiliser un serveur NFS (noeud dedie) au cas ou storage5k n'est pas disponible
+- Utiliser le lien infiniband (si disponible) pour le montage du partage NFS
+- Resoudre le probleme de la configuration reseau des noeuds => ecrasement du fichier 'interfaces'
 - Experimentations de plus grande taille pour l'expe finale (equivalent d'un "plusieurs clusters")
 - Faire des migrations "asymmétrique": pour le moment on d'un noeud à un noeud. Dans la pratique, si on branche des noeuds plus récents, ils stockeront plus que le contenu d'un ancien noeud. L'équivalent de 1.5 ou de 2 anciens noeuds par exemple.
 - On peut faire des evals à petite échelles pour tester rapidement des ordonnancements différent. Faire une grosse eval de temps en temps permet juste de s'assurer le plus tôt possible que l'environnement est toujours ok.
