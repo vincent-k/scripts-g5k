@@ -10,7 +10,7 @@ DEPLOY_SCRIPT='deploy.sh'
 OUTPUT_DIR="`pwd`/files"
 
 # CTL NODE
-CTL_NODE_CLUSTER='helios'
+CTL_NODE_CLUSTER='adonis'
 IMG_CTL='debian-sid-qemu'
 CTL_NODE="$OUTPUT_DIR/ctl_node"
 
@@ -19,7 +19,7 @@ NFS_SRV="$OUTPUT_DIR/nfs_srv"
 
 # NODES
 NB_NODES=4
-CLUSTER='suno'
+CLUSTER='edel'
 IMG_NODES='debian-sid-qemu'
 NODES_LIST="$OUTPUT_DIR/nodes_list"
 NODES_OK="$OUTPUT_DIR/nodes_ok"
