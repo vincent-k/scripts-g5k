@@ -14,6 +14,9 @@ CTL_NODE_CLUSTER='helios'
 IMG_CTL='debian-sid-qemu'
 CTL_NODE="$OUTPUT_DIR/ctl_node"
 
+# NFS SRV NODE
+NFS_SRV="$OUTPUT_DIR/nfs_srv"
+
 # NODES
 NB_NODES=4
 CLUSTER='suno'
