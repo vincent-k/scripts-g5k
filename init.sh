@@ -67,6 +67,8 @@ function show_deployment {
 }
 
 
+## MAIN
+
 clear
 if [ -n "$SHARED_STORAGE" ]; then
 	reserve_storage

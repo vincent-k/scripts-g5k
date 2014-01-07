@@ -189,6 +189,8 @@ function get_files_back {
 }
 
 
+## MAIN
+
 mkdir "$RESULTS_DIR"
  
 VIRSH_OPTS=" --live --copy-storage-inc "
