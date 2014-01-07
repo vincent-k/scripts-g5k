@@ -119,6 +119,24 @@ function send_to_ctl {
 	scp $SSH_OPTS -r $SRC $SSH_USER@$(cat $CTL_NODE):$DEST_DIR > /dev/null
 }
 
+function mount_nfs_storage {
+
+	# Use ram for NFS share (cluster edel => 24 Go max)
+	ssh $SSH_USER@`cat $SRV_NFS` $SSH_OPTS "mount -t tmpfs -o size=12G tmpfs /data/nfs && sync"
+	
+	IP_SRV_NFS=$(host `cat $SRV_NFS` | awk '{print $4;}')
+
+	for NODE in `cat $NODES_OK`; do
+		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_SRV_NFS:/data/nfs /data/nfs && sync"
+	done
+
+	# Change the remote directory to the shared storage (base img)
+	VM_BASE_IMG_DIR="/data/nfs"
+
+	# Define backing img directory if necessary
+	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
+}
+
 function mount_shared_storage {
 
 	# Mount storage in all nodes
@@ -163,7 +181,7 @@ function duplicate_imgs_in_node {
 
 function duplicate_imgs_in_nodes {
 
-        local NODES="$1"
+	local NODES="$1"
 	local VM_INDEX=1
 
 	echo -e "Duplicate $NB_VMS_PER_NODE imgs per node in $(cat $NODES|wc -l) nodes :"
@@ -330,7 +348,9 @@ create_output_files
 deploy_ctl
 if [ -n "$NFS_SRV"];then deploy_nfs_server ; fi
 deploy_nodes
-if [ -n "$SHARED_STORAGE" ]; then mount_shared_storage ; fi
+if [ -n "$SHARED_STORAGE" ]; then
+	if [ -n "$NFS_SRV"];then mount_nfs_storage ; else mount_shared_storage ; fi
+fi
 define_hosting_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
 if [ ! -n "$SHARED_STORAGE" ]; then duplicate_imgs_in_nodes $HOSTING_NODES ; fi
