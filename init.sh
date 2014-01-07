@@ -70,7 +70,7 @@ function show_deployment {
 ## MAIN
 
 clear
-if [ -n "$SHARED_STORAGE" ]; then
+if [ -n "$SHARED_STORAGE" -a ! -n "$NFS_SRV" ]; then
 	reserve_storage
 fi
 deploy_nodes
