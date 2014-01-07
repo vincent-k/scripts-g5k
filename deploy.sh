@@ -69,7 +69,7 @@ function deploy_nfs_server {
 
 	# Define the first node as NFS server
 	head -1 $NODES_LIST > $NFS_SRV
-	tail -$((`cat $NODES_LIST | wc -l` - 1)) > $NODES_LIST
+	echo -e "$(tail -$(( `cat $NODES_LIST | wc -l` - 1 )) $NODES_LIST)" > $NODES_LIST
 
 	# Deploy the NFS server
 	echo -e "################# NFS SERVER DEPLOYMENT ##################"
@@ -121,13 +121,15 @@ function send_to_ctl {
 
 function mount_nfs_storage {
 
-	# Use ram for NFS share (cluster edel => 24 Go max)
-	ssh $SSH_USER@`cat $SRV_NFS` $SSH_OPTS "mount -t tmpfs -o size=12G tmpfs /data/nfs && sync"
-	
-	IP_SRV_NFS=$(host `cat $SRV_NFS` | awk '{print $4;}')
+	IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
 
+	# Use ram for NFS share and start server (cluster edel => 24 Go max)
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=12G tmpfs /data/nfs && sync"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
+	
 	for NODE in `cat $NODES_OK`; do
-		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_SRV_NFS:/data/nfs /data/nfs && sync"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
 	done
 
 	# Change the remote directory to the shared storage (base img)
@@ -346,10 +348,10 @@ function start_workload_in_vms {
 
 create_output_files
 deploy_ctl
-if [ -n "$NFS_SRV"];then deploy_nfs_server ; fi
+if [ -n "$NFS_SRV" ]; then deploy_nfs_server ; fi
 deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then
-	if [ -n "$NFS_SRV"];then mount_nfs_storage ; else mount_shared_storage ; fi
+	if [ -n "$NFS_SRV" ]; then mount_nfs_storage ; else mount_shared_storage ; fi
 fi
 define_hosting_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
