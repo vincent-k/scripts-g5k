@@ -78,8 +78,6 @@ function deploy_nodes {
 	echo -e "######## DIFF BETWEEN RESERVED AND DEPLOYED NODES ########"
 	diff -u $NODES_LIST $NODES_OK
 	echo -e "##########################################################\n"
-
-	echo -ne "Waiting for nodes networking configuration .." && sleep 60 && echo -e "\n"
 }
 
 function define_hosting_nodes {
