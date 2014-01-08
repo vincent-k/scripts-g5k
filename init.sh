@@ -31,9 +31,9 @@ function deploy_nodes {
 	# Nodes reservation
 	echo -e "Nodes reservation .."
 	if [ -n "$RESERVATION" ]; then
-		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+		SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
 	else
-		SUBMISSION=$(oarsub -l $NETWORK+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+		SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}nodes=1+{"cluster='$CLUSTER'"}nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
 	fi
 
 	# Get the JOB_ID of reservation

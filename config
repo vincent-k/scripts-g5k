@@ -1,7 +1,8 @@
 ###################### SUBMISSION #########################
 TIME='2:00'
 #RESERVATION='2013-12-09 13:00:00'
-NETWORK='slash_22=1'
+NETWORK='slash_22'
+NETWORK_NB=1
 SHARED_STORAGE=2 # 1 chunk => 10Go
 ###########################################################
 
