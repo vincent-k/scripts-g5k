@@ -139,6 +139,25 @@ function mount_nfs_storage {
 	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
 }
 
+function configure_infiniband_in_nodes {
+
+	echo -en "Configuring Infiniband to all deployed nodes .."
+
+	# Configure infiniband interface into CTL
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband.sh $NFS_INFINIBAND_IF &
+	
+	# Configure infiniband interface into NFS SRV
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband.sh $NFS_INFINIBAND_IF &
+
+	# Configure infiniband interface into NODES
+	for NODE in `cat $NODES_OK`; do
+		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_infiniband.sh $NFS_INFINIBAND_IF &
+	done
+
+	wait
+	echo -e ". DONE\n"
+}
+
 function mount_shared_storage {
 
 	# Mount storage in all nodes
@@ -351,7 +370,10 @@ deploy_ctl
 if [ -n "$NFS_SRV" ]; then deploy_nfs_server ; fi
 deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then
-	if [ -n "$NFS_SRV" ]; then mount_nfs_storage ; else mount_shared_storage ; fi
+	if [ -n "$NFS_SRV" ]; then
+		if [ -n "$NFS_INFINIBAND_IF" ]; then configure_infiniband_in_nodes ; fi
+		mount_nfs_storage
+	else mount_shared_storage ; fi
 fi
 define_hosting_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
