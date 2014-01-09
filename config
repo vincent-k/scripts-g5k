@@ -1,5 +1,5 @@
 ###################### SUBMISSION #########################
-TIME='2:00'
+TIME='3:00'
 #RESERVATION='2013-12-09 13:00:00'
 NETWORK='slash_22'
 NETWORK_NB=1
@@ -20,7 +20,7 @@ NFS_SRV="$OUTPUT_DIR/nfs_srv"
 NFS_INFINIBAND_IF="ib0"
 
 # NODES
-NB_NODES=4
+NB_NODES=5
 CLUSTER='edel'
 IMG_NODES='debian-sid-qemu'
 NODES_LIST="$OUTPUT_DIR/nodes_list"
