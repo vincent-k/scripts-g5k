@@ -108,7 +108,7 @@ function deploy_nodes {
 function define_hosting_nodes {
 
 	head -$(( `cat $NODES_OK | wc -l` / 2 )) $NODES_OK > $HOSTING_NODES
-	NB_HOSTING_NODES=$(cat $HOSTING_NODES | wc -l)
+	tail -$(( `cat $NODES_OK | wc -l` / 2 )) $NODES_OK > $IDLE_NODES
 }
 
 function send_to_ctl {
