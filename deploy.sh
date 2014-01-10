@@ -124,14 +124,14 @@ function configure_infiniband_in_nodes {
 	echo -en "Configuring Infiniband to all deployed nodes .."
 
 	# Configure infiniband interface into CTL
-	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband.sh $NFS_INFINIBAND_IF &
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
 	
 	# Configure infiniband interface into NFS SRV
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband.sh $NFS_INFINIBAND_IF &
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
 
 	# Configure infiniband interface into NODES
 	for NODE in `cat $NODES_OK`; do
-		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_infiniband.sh $NFS_INFINIBAND_IF &
+		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
 	done
 
 	wait
@@ -254,6 +254,7 @@ function prepare_vms_in_nodes {
 	wait
 
 	cat $IPS_MACS | head -$(($(cat $NODES | wc -l) * $NB_VMS_PER_NODE)) | cut -f1 > $VMS_IPS
+	echo
 }
 
 function create_backing_imgs_in_node {
