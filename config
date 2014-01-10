@@ -25,6 +25,8 @@ CLUSTER='edel'
 IMG_NODES='debian-sid-qemu'
 NODES_LIST="$OUTPUT_DIR/nodes_list"
 NODES_OK="$OUTPUT_DIR/nodes_ok"
+HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
+IDLE_NODES="$OUTPUT_DIR/idle_nodes"
 
 # VMS
 VM_VCPU=2
@@ -41,7 +43,6 @@ BACKING_DIR="backing"
 IPS_MACS="$OUTPUT_DIR/ips_macs"
 IPS_NAMES="$OUTPUT_DIR/ips_names"
 VMS_IPS="$OUTPUT_DIR/vms_ips"
-HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
 ###########################################################
 
 # Set ssh parameters
