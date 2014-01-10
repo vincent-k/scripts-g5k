@@ -345,7 +345,8 @@ function start_workload_in_vms {
 	local SCRIPT_OPTIONS="$2"
 	local RESULTS_DIR="$3"
 	local VMS="$4"
-	
+
+	mkdir $RESULTS_DIR	
 	echo -e "Starting workload in $(cat $VMS | wc -l) VMs :"
 	for IP in `cat $VMS`; do
 		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP &
@@ -391,12 +392,12 @@ prepare_vms_in_nodes $HOSTING_NODES
 start_vms_in_nodes $HOSTING_NODES
 wait_for_vms_to_boot $VMS_IPS
 
-# Start workload in VMs and get results
-RESULTS_DIR="/home/vinkherbache/workload_results" && mkdir $RESULTS_DIR
-start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR $VMS_IPS
+# Start workload in VMs and get results at the end
+start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" "~/workload_results" $VMS_IPS &
 
-#start_expe "./expe.sh"
+start_expe "./decommissioning.sh $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)"
 
+wait
 
 echo -e "\nALL FINISHED !"
 
