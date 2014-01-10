@@ -28,8 +28,11 @@ OK Integrer le workload et recuperer automatiquement les resultats
 OK Acceder à la BMC pour avoir la conso électrique ? (cluster edel)
 OK Utiliser un serveur NFS (noeud dedie) au cas ou storage5k n'est pas disponible
 OK Utiliser le lien infiniband (si disponible) pour le montage du partage NFS (interface ib0)
+- Installer ipmitools (+freeipmi) sur l'img des noeuds
+- Resoudre le probleme de la configuration reseau des noeuds => ecrasement du fichier 'interfaces' < SOLUTION : suppression de rc.local apres le premier boot + penser a desactiver le stp
+- Creer un script qui capture et renvoie la consommation d'energie en Watt
+- Tester le script decommisioning ! plotter et interpreter les resultats
 - Faire fonctionner NFS/RDMA
-- Resoudre le probleme de la configuration reseau des noeuds => ecrasement du fichier 'interfaces'
 - Experimentations de plus grande taille pour l'expe finale (equivalent d'un "plusieurs clusters")
 - Faire des migrations "asymmétrique": pour le moment on d'un noeud à un noeud. Dans la pratique, si on branche des noeuds plus récents, ils stockeront plus que le contenu d'un ancien noeud. L'équivalent de 1.5 ou de 2 anciens noeuds par exemple.
 - On peut faire des evals à petite échelles pour tester rapidement des ordonnancements différent. Faire une grosse eval de temps en temps permet juste de s'assurer le plus tôt possible que l'environnement est toujours ok.
