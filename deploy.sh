@@ -284,12 +284,13 @@ function create_backing_imgs_in_nodes {
 	local NODES="$1"
 	local VM_INDEX=1
 
-	echo -e "Creating $NB_VMS_PER_NODE backing imgs per node in $(cat $NODES|wc -l) hosting nodes :"
+	echo -ne "Creating $NB_VMS_PER_NODE backing imgs per node in $(cat $NODES|wc -l) hosting nodes.."
 	for NODE in `cat $NODES`; do
 		create_backing_imgs_in_node $VM_INDEX $NODE &
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
 	wait
+	echo -e ". DONE\n."
 }
 
 function start_vms_in_node {
