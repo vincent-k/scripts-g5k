@@ -119,26 +119,6 @@ function send_to_ctl {
 	scp $SSH_OPTS -r $SRC $SSH_USER@$(cat $CTL_NODE):$DEST_DIR > /dev/null
 }
 
-function mount_nfs_storage {
-
-	IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
-
-	# Use ram for NFS share and start server (cluster edel => 24 Go max)
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=12G tmpfs /data/nfs && sync"
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
-	
-	for NODE in `cat $NODES_OK`; do
-		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
-	done
-
-	# Change the remote directory to the shared storage (base img)
-	VM_BASE_IMG_DIR="/data/nfs"
-
-	# Define backing img directory if necessary
-	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
-}
-
 function configure_infiniband_in_nodes {
 
 	echo -en "Configuring Infiniband to all deployed nodes .."
@@ -181,6 +161,31 @@ function mount_shared_storage {
 
 	# Give it more permissions
 	chmod go+rwx $VM_BASE_IMG_DIR && chmod -R go+rw $VM_BASE_IMG_DIR
+}
+
+function mount_nfs_storage {
+
+	# Use infiniband interface if declared in config file
+	if [ -n "$NFS_INFINIBAND_IF" ]; then
+		IP_NFS_SRV=$(host `cat $NFS_SRV`-$NFS_INFINIBAND_IF | awk '{print $4;}')
+	else	
+		IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
+	fi
+
+	# Use ram for NFS share and start server (cluster edel => 24 Go max)
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=15G tmpfs /data/nfs && sync"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
+	
+	for NODE in `cat $NODES_OK`; do
+		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
+	done
+
+	# Change the remote directory to the shared storage (base img)
+	VM_BASE_IMG_DIR="/data/nfs"
+
+	# Define backing img directory if necessary
+	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
 }
 
 function duplicate_imgs_in_node {
