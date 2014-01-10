@@ -69,6 +69,7 @@ function show_deployment {
 
 ## MAIN
 
+./clean.sh
 clear
 if [ -n "$SHARED_STORAGE" -a ! -n "$NFS_SRV" ]; then
 	reserve_storage
