@@ -54,15 +54,39 @@ function migrate {
 	fi
 }
 
+function power_on_node {
+
+	local NODE="$1"
+	local LOG_DIR="$2"
+
+	local START=$(date +%s)
+	./power_on $NODE
+	local STOP=$(date +%s)
+
+	echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
+}
+
+function power_off_node {
+
+	local NODE="$1"
+	local LOG_DIR="$2"
+
+	local START=$(date +%s)
+	./power_off $NODE
+	local STOP=$(date +%s)
+
+	echo -e "$(($STOP - $START))" > $LOG_DIR/halt_time
+}
+
 function migrate_par {
 
 	local NODE_SRC="$1"
 	local NODE_DEST="$2"
-	local MIGRATE_DIR="$3"
+	local MIGRATE_DIR="$3" && mkdir "$MIGRATE_DIR"
 
-	./power_on $NODE_DEST
+	# Boot the new node and get boot time
+	power_on_node $NODE_DEST $MIGRATE_DIR
 
-	mkdir "$MIGRATE_DIR"
 	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
 		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
 		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date)" | tee -a $MIGRATE_DIR/$VM &
@@ -70,26 +94,26 @@ function migrate_par {
 
 	wait
 
-	./power_off $NODE_SRC
+	# Shutdown the old node and get halt time
+	power_off_node $NODE_SRC $MIGRATE_DIR
 }
 
 function migrate_seq {
 
 	local NODE_SRC="$1"
         local NODE_DEST="$2"
-	local MIGRATE_DIR="$3"
+	local MIGRATE_DIR="$3" && mkdir "$MIGRATE_DIR"
 	
-	./power_on $NODE_DEST
-	# TODO : Store boot time
+	# Boot the new node and get boot time
+	power_on_node $NODE_DEST $MIGRATE_DIR
 
-	mkdir "$MIGRATE_DIR"
         for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
 		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
                 migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date)" | tee -a $MIGRATE_DIR/$VM
         done
-	
-	./power_off $NODE_SRC
-	# TODO : Get halt time from BMC
+
+	# Shutdown the old node and get halt time
+	power_off_node $NODE_SRC $MIGRATE_DIR
 }
 
 function scenario_par-par {
@@ -107,8 +131,6 @@ function scenario_par-par {
 	done
 	wait
 	echo -e "#######################################################################\n"
-
-	sleep 5
 }
 
 function scenario_par-seq {
@@ -126,8 +148,6 @@ function scenario_par-seq {
 	done
 	wait
 	echo -e "#######################################################################\n"
-
-	sleep 5
 }
 
 function scenario_seq-par {
@@ -144,8 +164,6 @@ function scenario_seq-par {
 		migrate_par $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC
 	done
 	echo -e "#######################################################################\n"
-
-	sleep 5
 }
 
 function scenario_seq-seq {
