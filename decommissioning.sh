@@ -180,6 +180,23 @@ function scenario_seq-seq {
 		migrate_seq $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC
 	done
 	echo -e "#######################################################################\n"
+}
+
+function start_workload_in_vms {
+
+	local WORKLOAD_SCRIPT="$1"
+	local SCRIPT_OPTIONS="$2"
+	local RESULTS_DIR="$3"
+	local VMS="$4"
+
+	mkdir $RESULTS_DIR
+	echo -e "Starting workload in $(cat $VMS | wc -l) VMs :"
+	for IP in `cat $VMS`; do
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP &
+	done
+	wait
+}
+
 
 	sleep 5
 }
