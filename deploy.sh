@@ -55,20 +55,32 @@ function create_output_files {
 
 function deploy_ctl {
 
+	# Get retry number
+	local RETRY=$1
+
 	# Deploy the CTL node
 	echo -e "################## CTL NODE DEPLOYMENT ###################"
 	kadeploy3 -e $IMG_CTL -f $CTL_NODE --output-ok-nodes $CTL_NODE -k
 	echo -e "##########################################################\n"
 
-	# Quit if deployment failed
+	# Retry or quit if deployment failed RETRY times
 	if [ `cat $CTL_NODE | uniq | grep $CTL_NODE_CLUSTER | wc -l` -eq 0 ]; then
-		echo -e "\nCANCELING !"
-		#oardel $OAR_JOB_ID
-		## Delete the storage reservation if exist
-		#if [ -n "$SHARED_STORAGE" ]; then
-		#	oardel $SHARED_STORAGE
-		#fi
-		exit
+		echo -ne "\nERROR ! "
+		if [ $RETRY -gt 0 ]; then
+		
+			echo -e "Retrying ($RETRY time(s)) :\n"
+			deploy_ctl $(($RETRY - 1))
+		else
+			echo -e "Cancelling all jobs submissions .."
+			# Cancel the job
+			oardel $OAR_JOB_ID
+
+			# Cancel the storage reservation if exist
+			if [ -n "$SHARED_STORAGE" ]; then
+				oardel $SHARED_STORAGE
+			fi
+			exit
+		fi
 	fi
 }
 
@@ -82,15 +94,24 @@ function deploy_nfs_server {
 	kadeploy3 -e $IMG_NODES -f $NFS_SRV --output-ok-nodes $NFS_SRV -k
 	echo -e "##########################################################\n"
 
-	# Quit if deployment failed
+	# Retry or quit if deployment failed RETRY times
 	if [ `cat $NFS_SRV | uniq | grep $CLUSTER | wc -l` -eq 0 ]; then
-		echo -e "\nCANCELING !"
-		#oardel $OAR_JOB_ID
-		## Delete the storage reservation if exist
-		#if [ -n "$SHARED_STORAGE" ]; then
-		#	oardel $SHARED_STORAGE
-		#fi
-		exit
+		echo -ne "\nERROR ! "
+		if [ $RETRY -gt 0 ]; then
+		
+			echo -e "Retrying ($RETRY time(s)) :\n"
+			deploy_nfs_server $(($RETRY - 1))
+		else
+			echo -e "Cancelling all jobs submissions .."
+			# Cancel the job
+			oardel $OAR_JOB_ID
+
+			# Cancel the storage reservation if exist
+			if [ -n "$SHARED_STORAGE" ]; then
+				oardel $SHARED_STORAGE
+			fi
+			exit
+		fi
 	fi
 }
 
