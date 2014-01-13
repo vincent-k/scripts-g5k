@@ -221,9 +221,14 @@ function mount_nfs_storage {
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=15G tmpfs /data/nfs && sync"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
-	
+
+	# Mount NFS share to the CTL
+	ssh $SSH_USER@`cat $NODE_CTL` $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
+
+	# Mount NFS share to all nodes and make the share persistent
 	for NODE in `cat $NODES_OK`; do
 		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
+		ssh $SSH_USER@$NODE $SSH_OPTS 'echo -e "$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr" >> /etc/fstab'
 	done
 
 	# Change the remote directory to the shared storage (base img)
