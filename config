@@ -28,6 +28,10 @@ NODES_OK="$OUTPUT_DIR/nodes_ok"
 HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
 IDLE_NODES="$OUTPUT_DIR/idle_nodes"
 
+# BMC
+BMC_USER='admin'
+BMC_MDP='mdpbmc'
+
 # VMS
 VM_VCPU=2
 VM_MEM=4096
