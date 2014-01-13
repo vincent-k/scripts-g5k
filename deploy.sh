@@ -396,13 +396,19 @@ function start_expe {
 	# Send output directory to CTL node
 	send_to_ctl $OUTPUT_DIR
 
-	# Send some scripts
+	# Send config file to the CTL
+	send_to_ctl ./config
+
+	# Send some scripts (dependencies)
 	send_to_ctl ./create_backing_img
+	send_to_ctl ./handbrake_workload
+	send_to_ctl ./power_on
+	send_to_ctl ./power_off
 	send_to_ctl ./migrate_vm
 	
 	# Send and start experimentation script to the CTL node
 	echo -e "Send and execute experimentation script to the CTL :\n"
-	send_to_ctl $SCRIPT
+	send_to_ctl ./$SCRIPT
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "~$SSH_USER/$SCRIPT"
 }
 
