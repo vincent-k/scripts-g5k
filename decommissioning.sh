@@ -198,10 +198,23 @@ function start_workload_in_vms {
 }
 
 
-	sleep 5
+function collect_nodes_energy_consumption {
+
+	local LOG_DIR="$1"
+	mkdir $LOG_DIR
+
+	# Get energy consumption (every second) of all nodes
+	while [ true ]; do
+		for NODE in `cat $NODES_OK`; do
+			echo "`date +%s`\t`ipmitool -H $(host $(echo $NODE | cut -d'.' -f1)-bmc | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP sdr get Power | grep Reading | cut -d':' -f 2`" >> $LOG_DIR/$NODE &
+		done
+		sleep 1
+		wait
+	done
 }
 
 function get_files_back {
+
 	tar czf $RESULTS_DIR.tgz $RESULTS_DIR && sync
 	scp $RESULTS_DIR.tgz vinkherbache@$REMOTE_IP:/home/vinkherbache/
 }
@@ -210,12 +223,20 @@ function get_files_back {
 ## MAIN
 
 RESULTS_DIR="decommissioning_results"
-#VIRSH_OPTS=" --live --copy-storage-inc "
 VIRSH_OPTS=" --live "
+#VIRSH_OPTS=" --live --copy-storage-inc "
 
 mkdir "$RESULTS_DIR"
-scenario_par-par $RESULTS_DIR/scenario_par-par
 
+collect_nodes_energy_consumption $RESULTS_DIR/consumption &
+COLLECT_ENERGY_TASK=$!
+sleep 5
+start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR $VMS_IPS &
+sleep 5
+scenario_par-par $RESULTS_DIR/scenario_par-par
+sleep 5
+kill -TERM $COLLECT_ENERGY_TASK
+wait
 get_files_back
 
 echo -e "\nEND OF DECOMMISSIONING"
