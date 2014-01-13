@@ -154,11 +154,30 @@ function configure_infiniband_in_nodes {
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
 	
 	# Configure infiniband interface into NFS SRV
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
+	if [ -n "$NFS_SRV" ]; then ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF & ; fi
 
 	# Configure infiniband interface into NODES
 	for NODE in `cat $NODES_OK`; do
 		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
+	done
+
+	wait
+	echo -e ". DONE\n"
+}
+
+function configure_bmc_in_nodes {
+
+	echo -en "Configuring BMC to all deployed nodes .."
+
+	# Configure infiniband interface into CTL
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_bmc &
+	
+	# Configure infiniband interface into NFS SRV
+	if [ -n "$NFS_SRV" ]; then ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_bmc & ; fi
+
+	# Configure infiniband interface into NODES
+	for NODE in `cat $NODES_OK`; do
+		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_bmc &
 	done
 
 	wait
@@ -180,8 +199,7 @@ function mount_shared_storage {
 	fi
 
 	# Change the remote directory to the shared storage (base img)
-	VM_BASE_IMG_DIR="/data/$(whoami)"
-	VM_BASE_IMG_DIR+="_$SHARED_STORAGE"
+	VM_BASE_IMG_DIR="/data/$(whoami)_$SHARED_STORAGE"
 
 	# Define backing img directory if necessary
 	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
@@ -317,7 +335,7 @@ function create_backing_imgs_in_nodes {
 		VM_INDEX=$(( $VM_INDEX + $NB_VMS_PER_NODE ))
 	done
 	wait
-	echo -e ". DONE\n."
+	echo -e ". DONE\n"
 }
 
 function start_vms_in_node {
@@ -387,8 +405,8 @@ function start_expe {
 ## MAIN
 
 create_output_files
-deploy_ctl
-if [ -n "$NFS_SRV" ]; then deploy_nfs_server ; fi
+deploy_ctl 3
+if [ -n "$NFS_SRV" ]; then deploy_nfs_server 3 ; fi
 deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then
 	if [ -n "$NFS_SRV" ]; then
@@ -396,6 +414,7 @@ if [ -n "$SHARED_STORAGE" ]; then
 		mount_nfs_storage
 	else mount_shared_storage ; fi
 fi
+if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then configure_bmc_in_nodes ; fi
 define_hosting_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
 if [ ! -n "$SHARED_STORAGE" ]; then duplicate_imgs_in_nodes $HOSTING_NODES ; fi
