@@ -392,6 +392,7 @@ function wait_for_vms_to_boot {
 function start_expe {
 
 	local SCRIPT="$1"
+	local SCRIPT_OPTS="$2"
 
 	# Send output directory to CTL node
 	send_to_ctl $OUTPUT_DIR
@@ -409,7 +410,7 @@ function start_expe {
 	# Send and start experimentation script to the CTL node
 	echo -e "Send and execute experimentation script to the CTL :\n"
 	send_to_ctl ./$SCRIPT
-	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "~$SSH_USER/$SCRIPT"
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "~$SSH_USER/$SCRIPT $SCRIPT_OPTS"
 }
 
 
@@ -435,7 +436,7 @@ start_vms_in_nodes $HOSTING_NODES
 wait_for_vms_to_boot $VMS_IPS
 
 # Start experiment
-start_expe "decommissioning.sh $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)"
+start_expe "decommissioning.sh" "$VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR $(whoami) $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)"
 
 wait
 

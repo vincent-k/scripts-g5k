@@ -3,7 +3,8 @@
 # Get params
 VM_BASE_IMG_DIR="$1"
 VM_BACKING_IMG_DIR="$2"
-REMOTE_IP="$3"
+REMOTE_USER="$3"
+REMOTE_IP="$4"
 
 # Get variables from config file
 . ./config
@@ -216,7 +217,7 @@ function collect_nodes_energy_consumption {
 function get_files_back {
 
 	tar czf $RESULTS_DIR.tgz $RESULTS_DIR && sync
-	scp $RESULTS_DIR.tgz vinkherbache@$REMOTE_IP:/home/vinkherbache/
+	scp $RESULTS_DIR.tgz $REMOTE_USER@$REMOTE_IP:~$REMOTE_USER/
 }
 
 
