@@ -212,7 +212,7 @@ function mount_nfs_storage {
 
 	# Use infiniband interface if declared in config file
 	if [ -n "$NFS_INFINIBAND_IF" ]; then
-		IP_NFS_SRV=$(host `cat $NFS_SRV`-$NFS_INFINIBAND_IF | awk '{print $4;}')
+		IP_NFS_SRV=$(host `cat $NFS_SRV | cut -d'.' -f 1`-$NFS_INFINIBAND_IF.`cat $NFS_SRV | cut -d'.' -f 2,3,4` | awk '{print $4;}')
 	else	
 		IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
 	fi
