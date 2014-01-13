@@ -21,10 +21,17 @@ function create_output_files {
 		mkdir $OUTPUT_DIR
 	fi
 
-	# Get list of nodes
+	# Define the CTL node
 	cat $OAR_NODE_FILE | uniq | grep $CTL_NODE_CLUSTER | head -1  > $CTL_NODE
 	cat $OAR_NODE_FILE | uniq | grep $CLUSTER  > $NODES_LIST
 	sed -i '/'$(cat $CTL_NODE)'/d' $NODES_LIST
+
+	# Define the first node as NFS server
+	if [ -n "$NFS_SRV" ]; then
+	        head -1 $NODES_LIST > $NFS_SRV
+	        echo -e "$(tail -$(( `cat $NODES_LIST | wc -l` - 1 )) $NODES_LIST)" > $NODES_LIST
+	fi
+
 	echo -e "################# LIST OF RESERVED NODES #################"
 	echo -ne "CTL : "
 	cat $CTL_NODE
@@ -67,9 +74,8 @@ function deploy_ctl {
 
 function deploy_nfs_server {
 
-	# Define the first node as NFS server
-	head -1 $NODES_LIST > $NFS_SRV
-	echo -e "$(tail -$(( `cat $NODES_LIST | wc -l` - 1 )) $NODES_LIST)" > $NODES_LIST
+	# Get retry number
+	local RETRY=$1
 
 	# Deploy the NFS server
 	echo -e "################# NFS SERVER DEPLOYMENT ##################"
