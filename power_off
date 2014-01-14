@@ -2,9 +2,12 @@
 
 # Get parameter
 NODE="$1"
+BMC_USER="$2"
+BMC_MDP="$3"
 
-# Get variables from config file
-. ./config
+# Set ssh parameters
+SSH_USER="root"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 
 
 function wait_for_halt {
@@ -12,37 +15,58 @@ function wait_for_halt {
         local NODE="$1"
 
 	# Check if the chassis status is off
-	while [ `ipmitool -H $(host $(echo "$NODE" | cut -d'.' -f1)-bmc | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis status | grep System | grep on | wc -l` -gt 0 ]; do
+	while [ `ipmitool -H $(host $(echo "$NODE" | cut -d'.' -f1)-bmc.$(echo "$NODE" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis status | grep System | grep on | wc -l` -gt 0 ]; do
 		sleep 2
 	done
 }
 
 if [ -n "$NODE" ]; then
 
-	local START=$(date +%s)
-
 	if [ -f "$NODE" ]; then
-		echo -ne "Powering off $((cat $NODE | wc -l)) nodes .."
-		kapower3 --off -f $NODE >/dev/null
+		echo -ne "Powering off $(cat $NODE | wc -l) nodes .."
 
-		# Wait for shutdown of all nodes
+		# Using kapower
+		#kapower3 --off -f $NODE >/dev/null
+
+		# Using remote ssh cmd
 		for N in `cat $NODE`; do
-			wait_for_halt $N &
+			ssh $SSH_USER@$N $SSH_OPTS 'halt' &
 		done
 		wait
+	
+		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
+		
+			# Wait for shutdown of all nodes
+			START=$(date +%s)
+			for N in `cat $NODE`; do
+				wait_for_halt $N &
+			done
+			wait
+			END=$(date +%s)
 
-		local END=$(date +%s)
-
-		echo -e ". done. (total shutdown time = $(($END - $START)))s"
+			echo -e ". DONE (total shutdown time = $(($END - $START)))s"
+		else
+			echo
+		fi
 	else
 		echo -ne "Powering off node '$NODE' .."
-		kapower3 --off -m $NODE >/dev/null
 
-		# Wait for shutdow
-		wait_for_halt $NODE
+		# Using kapower
+		#kapower3 --off -m $NODE >/dev/null
 
-		local END=$(date +%s)
+		# Using remote ssh cmd
+		ssh $SSH_USER@$NODE $SSH_OPTS 'halt'
 
-		echo -e ". done. (shutdown time = $(($END - $START)))s"
+		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
+
+			# Wait for shutdow
+			START=$(date +%s)
+			wait_for_halt $NODE
+			END=$(date +%s)
+
+			echo -e ". DONE (shutdown time = $(($END - $START)))s"
+		else
+			echo
+		fi
 	fi	
 fi
