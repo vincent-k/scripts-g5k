@@ -1,16 +1,18 @@
 #!/bin/bash
 
+# Get parameters
 WORKLOAD_SCRIPT="$1"
 SCRIPT_OPTIONS="$2"
 RESULTS_DIR="$3"
 VM_IP="$4"
+VM_NAME="$5"
 
-# Source config file variables
-. ./config
-
-VM_NAME=$(cat $IPS_NAMES | grep $VM_IP | cut -f 1)
 LOCAL_USER=$(whoami)
 LOCAL_IP=$(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)
+
+# Set ssh parameters
+SSH_USER="root"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 
 
 # Send script to the VM
