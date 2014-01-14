@@ -56,7 +56,7 @@ ssh $SSH_USER@$NODE $SSH_OPTS "rm -rf /mnt/root/.ssh && cp -r /root/.ssh /mnt/ro
 
 # Send the rNotify python script and run it on boot
 if [ -n $CTL_NODE_NAME ]; then
-	scp $SSH_OPTS ./rNotify $SSH_USER@$NODE:/mnt/opt/
+	scp $SSH_OPTS ./rNotify $SSH_USER@$NODE:/mnt/opt/ > /dev/null
 	BOOT_FILE='#!/bin/sh\n\n'
 	BOOT_FILE+="python /opt/rNotify $(host $CTL_NODE_NAME | awk '{print $4;}') $IP"
 	ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$BOOT_FILE\" > /mnt/etc/rc.local"
