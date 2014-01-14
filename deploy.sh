@@ -174,17 +174,19 @@ function configure_infiniband_in_nodes {
 
 function configure_bmc_in_nodes {
 
-	echo -en "Configuring BMC to all deployed nodes .."
+	echo -en "Configuring BMC in all deployed nodes .."
 
 	# Configure infiniband interface into CTL
-	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_bmc &
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
 	
 	# Configure infiniband interface into NFS SRV
-	if [ -n "$NFS_SRV" ]; then ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_bmc & ; fi
+	if [ -n "$NFS_SRV" ]; then
+		ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
+	fi
 
 	# Configure infiniband interface into NODES
 	for NODE in `cat $NODES_OK`; do
-		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_bmc &
+		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
 	done
 
 	wait
@@ -423,6 +425,8 @@ function start_expe {
 	send_to_ctl ./power_on
 	send_to_ctl ./power_off
 	send_to_ctl ./migrate_vm
+	send_to_ctl ./start_workload_in_vm
+	send_to_ctl ./collect_energy_consumption
 	
 	# Send and start experimentation script to the CTL node
 	echo -e "Send and execute experimentation script to the CTL :\n"
