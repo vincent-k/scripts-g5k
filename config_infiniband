@@ -1,17 +1,23 @@
 #!/bin/bash
 
+# Get parameters
 IB_IF="$1"
+
+# Define vars
+IB_IP=$(host -t A `hostname -s`-$IB_IF.`hostname -d` | awk '{print $4;}')
+IB_MASK_SHORT=$(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f 2)
+IB_MASK_LONG=$(ifconfig | grep -A1 eth0 | tail -1 | awk {'print $4;'} | cut -d':' -f 2)
+
 
 # Load required modules
 modprobe mlx4_ib
 modprobe ib_ipoib
 
-IB_IP=$(host -t A `hostname -s`-$IB_IF.`hostname -d` | awk '{print $4;}')
-IB_MASK_SHORT=$(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f 2)
-IB_MASK_LONG=$(ifconfig | grep -A1 eth0 | tail -1 | awk {'print $4;'} | cut -d':' -f 2)
+# Load the modules on boot
+echo -e "mlx4_ib\nib_ipoib" >> /etc/modules
 
 # Assign IP address
-ip addr add $IB_IP/$MASK_SHORT dev $IB_IF
+ip addr add $IB_IP/$IB_MASK_SHORT dev $IB_IF
 ip link set dev $IB_IF up
 
 # Make the change persistent
