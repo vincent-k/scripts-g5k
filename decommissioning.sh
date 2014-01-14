@@ -61,10 +61,12 @@ function power_on_node {
 	local LOG_DIR="$2"
 
 	local START=$(date +%s)
-	./power_on $NODE
+	./power_on $NODE $BMC_USER $BMC_MDP
 	local STOP=$(date +%s)
 
-	echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
+	if [ -n "$LOG_DIR" ]; then
+		echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
+	fi
 }
 
 function power_off_node {
@@ -73,10 +75,12 @@ function power_off_node {
 	local LOG_DIR="$2"
 
 	local START=$(date +%s)
-	./power_off $NODE
+	./power_off $NODE $BMC_USER $BMC_MDP
 	local STOP=$(date +%s)
 
-	echo -e "$(($STOP - $START))" > $LOG_DIR/halt_time
+	if [ -n "$LOG_DIR" ]; then
+		echo -e "$(($STOP - $START))" > $LOG_DIR/halt_time
+	fi
 }
 
 function migrate_par {
@@ -125,8 +129,8 @@ function scenario_par-par {
 	echo -e "############### SCENARIO 1 : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
-		local NODE_SRC=$(cat $HOSTING_NODES | head -$NB_MIGRATE_NODES | tail -1)
-		local NODE_DEST=$(cat $IDLE_NODES | head -$NB_MIGRATE_NODES | tail -1)
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
 		migrate_par $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC &
 	done
@@ -142,8 +146,8 @@ function scenario_par-seq {
 	echo -e "############# SCENARIO 2 : PARALLEL-SEQUENTIAL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
-		local NODE_SRC=$(cat $HOSTING_NODES | head -$NB_MIGRATE_NODES | tail -1)
-		local NODE_DEST=$(cat $IDLE_NODES | head -$NB_MIGRATE_NODES | tail -1)
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
 		migrate_seq $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC &
 	done
@@ -159,8 +163,8 @@ function scenario_seq-par {
 	echo -e "############# SCENARIO 3 : SEQUENTIAL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
-		local NODE_SRC=$(cat $HOSTING_NODES | head -$NB_MIGRATE_NODES | tail -1)
-		local NODE_DEST=$(cat $IDLE_NODES | head -$NB_MIGRATE_NODES | tail -1)
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
 		migrate_par $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC
 	done
@@ -175,8 +179,8 @@ function scenario_seq-seq {
 	echo -e "############ SCENARIO 4 : SEQUENTIAL-SEQUENTIAL MIGRATIONS ############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
-		local NODE_SRC=$(cat $HOSTING_NODES | head -$NB_MIGRATE_NODES | tail -1)
-		local NODE_DEST=$(cat $IDLE_NODES | head -$NB_MIGRATE_NODES | tail -1)
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
 		migrate_seq $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC
 	done
@@ -193,31 +197,15 @@ function start_workload_in_vms {
 	mkdir $RESULTS_DIR
 	echo -e "Starting workload in $(cat $VMS | wc -l) VMs :"
 	for IP in `cat $VMS`; do
-		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP &
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep $IP | cut -f 1) &
 	done
 	wait
-}
-
-
-function collect_nodes_energy_consumption {
-
-	local LOG_DIR="$1"
-	mkdir $LOG_DIR
-
-	# Get energy consumption (every second) of all nodes
-	while [ true ]; do
-		for NODE in `cat $NODES_OK`; do
-			echo "`date +%s`\t`ipmitool -H $(host $(echo $NODE | cut -d'.' -f1)-bmc | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP sdr get Power | grep Reading | cut -d':' -f 2`" >> $LOG_DIR/$NODE &
-		done
-		sleep 1
-		wait
-	done
 }
 
 function get_files_back {
 
 	tar czf $RESULTS_DIR.tgz $RESULTS_DIR && sync
-	scp $RESULTS_DIR.tgz $REMOTE_USER@$REMOTE_IP:~$REMOTE_USER/
+	scp $RESULTS_DIR.tgz $REMOTE_USER@$REMOTE_IP:~$REMOTE_USER/ > /dev/null
 }
 
 
@@ -227,12 +215,13 @@ RESULTS_DIR="decommissioning_results"
 VIRSH_OPTS=" --live "
 #VIRSH_OPTS=" --live --copy-storage-inc "
 
-mkdir "$RESULTS_DIR"
+rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"
 
-collect_nodes_energy_consumption $RESULTS_DIR/consumption &
+power_off_node $IDLE_NODES
+./collect_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
 sleep 5
-start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR $VMS_IPS &
+start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR/workload $VMS_IPS &
 sleep 5
 scenario_par-par $RESULTS_DIR/scenario_par-par
 sleep 5
