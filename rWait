@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -u
 from sys import *
 from os.path import *
 import BaseHTTPServer
@@ -40,11 +40,13 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             tokens.remove(token)
             if (verbose):
                 print(" Got notification '" + token + "'. " + str(len(tokens)) + " left")
+		stdout.flush()
             if len(tokens) == 0:
                 self.server.stop = True
         else:
             if (verbose):
                 print("Unexpected notification '" + token + "'")
+		stdout.flush()
             self.send_response(404)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
@@ -82,6 +84,7 @@ readToken(tokenfile)
 server_class = StoppableHttpServer
 httpd = server_class((host, port), MyHandler)
 print("Waiting on " + host + ":" + str(port) + " for " + str(len(tokens)) + " notifications")
+stdout.flush()
 try:
     httpd.serve_forever()
 except KeyboardInterrupt:
