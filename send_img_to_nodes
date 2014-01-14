@@ -19,7 +19,7 @@ echo -ne "Sending VM base IMG to nodes .."
 for NODE in `cat $NODE_LIST`; do
        # Send base IMG_VM to the node if it doesn't already exist
        if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ ! -e $DEST_DIR/$(basename $VM_IMG) ]'' ); then
-               scp $SSH_OPTS $VM_IMG $SSH_USER@$NODE:$DEST_DIR/
+               scp $SSH_OPTS $VM_IMG $SSH_USER@$NODE:$DEST_DIR/ > /dev/null
        fi
 done
 
