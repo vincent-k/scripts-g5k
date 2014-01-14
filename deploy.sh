@@ -3,7 +3,7 @@
 # Get variables from config file
 . ./config
 
-if [ -n $SHARED_STORAGE ]; then
+if [ -n "$SHARED_STORAGE" ]; then
 	SHARED_STORAGE="$1"
 fi
 
@@ -35,6 +35,11 @@ function create_output_files {
 	echo -e "################# LIST OF RESERVED NODES #################"
 	echo -ne "CTL : "
 	cat $CTL_NODE
+	if [ -n "$NFS_SRV" ]; then
+		echo -ne "NFS : "
+		cat $NFS_SRV
+	fi
+	echo -e "NODES :"
 	cat $NODES_LIST
 	echo -e "##########################################################\n"
 
@@ -154,7 +159,9 @@ function configure_infiniband_in_nodes {
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
 	
 	# Configure infiniband interface into NFS SRV
-	if [ -n "$NFS_SRV" ]; then ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF & ; fi
+	if [ -n "$NFS_SRV" ]; then
+		ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
+	fi
 
 	# Configure infiniband interface into NODES
 	for NODE in `cat $NODES_OK`; do
@@ -187,7 +194,7 @@ function configure_bmc_in_nodes {
 function mount_shared_storage {
 
 	# Mount storage in all nodes
-	echo -e "################# MOUNT SHARED STORAGE  ##################"
+	echo -e "################# MOUNT SHARED STORAGE ###################"
 	STORAGE_MOUNT=`storage5k -a mount -j $OAR_JOB_ID 2>&1`
 	echo -e "$STORAGE_MOUNT"
 	echo -e "##########################################################\n"
@@ -210,26 +217,36 @@ function mount_shared_storage {
 
 function mount_nfs_storage {
 
+	echo -e "################### MOUNT NFS STORAGE ####################"
 	# Use infiniband interface if declared in config file
 	if [ -n "$NFS_INFINIBAND_IF" ]; then
 		IP_NFS_SRV=$(host `cat $NFS_SRV | cut -d'.' -f 1`-$NFS_INFINIBAND_IF.`cat $NFS_SRV | cut -d'.' -f 2,3,4` | awk '{print $4;}')
+		echo -ne "Set up NFS using infiniband $NFS_INFINIBAND_IF interface .."
 	else	
 		IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
+		echo -ne "Set up NFS  using standard eth0 interface .."
 	fi
 
 	# Use ram for NFS share and start server (cluster edel => 24 Go max)
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=15G tmpfs /data/nfs && sync"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
+	echo -e ".\nNFS Server configured and started"
 
 	# Mount NFS share to the CTL
-	ssh $SSH_USER@`cat $NODE_CTL` $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
+	echo -ne "Mounting share in the CTL .."
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
+	echo -e ". DONE"
 
-	# Mount NFS share to all nodes and make the share persistent
+	# Mount NFS share to all nodes and make the share persistent	
+	echo -ne "Mounting share in all nodes .."
 	for NODE in `cat $NODES_OK`; do
-		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
-		ssh $SSH_USER@$NODE $SSH_OPTS 'echo -e "$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr" >> /etc/fstab'
+		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync" &
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab" &
 	done
+	wait
+	echo -e ". DONE"
+	echo -e "##########################################################\n"
 
 	# Change the remote directory to the shared storage (base img)
 	VM_BASE_IMG_DIR="/data/nfs"
