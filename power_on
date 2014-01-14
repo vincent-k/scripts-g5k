@@ -1,7 +1,8 @@
 #!/bin/bash
 
 NODE="$1"
-
+BMC_USER="$2"
+BMC_MDP="$3"
 
 function wait_for_boot {
 	local NODE="$1"
@@ -20,7 +21,16 @@ if [ -n "$NODE" ]; then
 
 		# Boot nodes list
 		echo -en "Booting $(cat $NODE|wc -l) nodes .."
-		kapower3 --on -f $NODE >/dev/null
+		
+		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
+			# Using IPMI
+			for N in `cat $NODE`; do
+				ipmitool -H $(host $(echo "$N" | cut -d'.' -f1)-bmc.$(echo "$N" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null
+			done
+		else
+			# Using kapower
+			kapower3 --on -f $NODE >/dev/null
+		fi
 
 		# Wait for boot of all nodes
 		for N in `cat $NODE`; do
@@ -35,7 +45,14 @@ if [ -n "$NODE" ]; then
 	else
 		# Boot node
 		echo -en "Booting node '$NODE' .."
-		kapower3 --on -m $NODE >/dev/null
+
+		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
+			# Using IPMI
+			ipmitool -H $(host $(echo "$NODE" | cut -d'.' -f1)-bmc.$(echo "$NODE" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null
+		else
+			# Using kapower
+			kapower3 --on -m $NODE >/dev/null
+		fi
 
 		# Wait for boot
 		wait_for_boot $NODE
