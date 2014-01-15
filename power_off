@@ -23,7 +23,7 @@ function wait_for_halt {
 if [ -n "$NODE" ]; then
 
 	if [ -f "$NODE" ]; then
-		echo -ne "Powering off $(cat $NODE | wc -l) nodes .."
+		echo -ne "Powering off $(cat $NODE | wc -l) nodes.."
 
 		# Using kapower
 		#kapower3 --off -f $NODE >/dev/null
@@ -44,7 +44,7 @@ if [ -n "$NODE" ]; then
 			wait
 			END=$(date +%s)
 
-			echo -e ". DONE (total shutdown time = $(($END - $START)))s"
+			echo -e ". DONE (total shutdown time = $(($END - $START))s)"
 		else
 			echo
 		fi
@@ -64,7 +64,7 @@ if [ -n "$NODE" ]; then
 			wait_for_halt $NODE
 			END=$(date +%s)
 
-			echo -e ". DONE (shutdown time = $(($END - $START)))s"
+			echo -e ". DONE (shutdown time = $(($END - $START))s)"
 		else
 			echo
 		fi
