@@ -10,6 +10,34 @@ REMOTE_IP="$4"
 . ./config
 
 
+function power_on_node {
+
+	local NODE="$1"
+	local LOG_DIR="$2"
+
+	local START=$(date +%s)
+	./power_on $NODE $BMC_USER $BMC_MDP
+	local STOP=$(date +%s)
+
+	if [ -n "$LOG_DIR" ]; then
+		echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
+	fi
+}
+
+function power_off_node {
+
+	local NODE="$1"
+	local LOG_DIR="$2"
+
+	local START=$(date +%s)
+	./power_off $NODE $BMC_USER $BMC_MDP
+	local STOP=$(date +%s)
+
+	if [ -n "$LOG_DIR" ]; then
+		echo -e "$(($STOP - $START))" > $LOG_DIR/halt_time
+	fi
+}
+
 function migrate {
 
 	local VM_NAME="$1"
@@ -55,35 +83,7 @@ function migrate {
 	fi
 }
 
-function power_on_node {
-
-	local NODE="$1"
-	local LOG_DIR="$2"
-
-	local START=$(date +%s)
-	./power_on $NODE $BMC_USER $BMC_MDP
-	local STOP=$(date +%s)
-
-	if [ -n "$LOG_DIR" ]; then
-		echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
-	fi
-}
-
-function power_off_node {
-
-	local NODE="$1"
-	local LOG_DIR="$2"
-
-	local START=$(date +%s)
-	./power_off $NODE $BMC_USER $BMC_MDP
-	local STOP=$(date +%s)
-
-	if [ -n "$LOG_DIR" ]; then
-		echo -e "$(($STOP - $START))" > $LOG_DIR/halt_time
-	fi
-}
-
-function migrate_par {
+function migrate_node_par {
 
 	local NODE_SRC="$1"
 	local NODE_DEST="$2"
@@ -103,7 +103,7 @@ function migrate_par {
 	power_off_node $NODE_SRC $MIGRATE_DIR
 }
 
-function migrate_seq {
+function migrate_node_seq {
 
 	local NODE_SRC="$1"
         local NODE_DEST="$2"
@@ -113,6 +113,9 @@ function migrate_seq {
 	power_on_node $NODE_DEST $MIGRATE_DIR
 
         for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+	
+		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+
 		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
                 migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date)" | tee -a $MIGRATE_DIR/$VM
         done
@@ -121,12 +124,13 @@ function migrate_seq {
 	power_off_node $NODE_SRC $MIGRATE_DIR
 }
 
-function scenario_par-par {
+function decommissioning_par-par {
 
-        local SCENARIO_DIR="$1"
-        mkdir "$SCENARIO_DIR"
+        local DECOMMISSIONING_DIR="$1"
+	local PIDS=""
+        mkdir "$DECOMMISSIONING_DIR"
 
-	echo -e "############### SCENARIO 1 : PARALLEL-PARALLEL MIGRATIONS #############"
+	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
@@ -138,12 +142,13 @@ function scenario_par-par {
 	echo -e "#######################################################################\n"
 }
 
-function scenario_par-seq {
+function decommissioning_par-seq {
 
-        local SCENARIO_DIR="$1"
-        mkdir "$SCENARIO_DIR"
+        local DECOMMISSIONING_DIR="$1"
+	local PIDS=""
+        mkdir "$DECOMMISSIONING_DIR"
 
-	echo -e "############# SCENARIO 2 : PARALLEL-SEQUENTIAL MIGRATIONS #############"
+	echo -e "############# DECOMMISSIONING : PARALLEL-SEQUENTIAL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
@@ -155,36 +160,37 @@ function scenario_par-seq {
 	echo -e "#######################################################################\n"
 }
 
-function scenario_seq-par {
+function decommissioning_seq-par {
 
-        local SCENARIO_DIR="$1"
-        mkdir "$SCENARIO_DIR"
+        local DECOMMISSIONING_DIR="$1"
+        mkdir "$DECOMMISSIONING_DIR"
 
-	echo -e "############# SCENARIO 3 : SEQUENTIAL-PARALLEL MIGRATIONS #############"
+	echo -e "############# DECOMMISSIONING : SEQUENTIAL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		migrate_par $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC
+		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC
 	done
-	echo -e "#######################################################################\n"
+	echo -e "###########################################################################\n"
 }
 
-function scenario_seq-seq {
+function decommissioning_seq-seq {
 
-        local SCENARIO_DIR="$1"
-        mkdir "$SCENARIO_DIR"
+        local DECOMMISSIONING_DIR="$1"
+        mkdir "$DECOMMISSIONING_DIR"
 
-	echo -e "############ SCENARIO 4 : SEQUENTIAL-SEQUENTIAL MIGRATIONS ############"
+	echo -e "############ DECOMMISSIONING : SEQUENTIAL-SEQUENTIAL MIGRATIONS ############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		migrate_seq $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC
+		migrate_node_seq $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC
 	done
-	echo -e "#######################################################################\n"
+	echo -e "###########################################################################\n"
 }
 
 function start_workload_in_vms {
@@ -195,7 +201,7 @@ function start_workload_in_vms {
 	local VMS="$4"
 
 	mkdir $RESULTS_DIR
-	echo -e "Starting workload in $(cat $VMS | wc -l) VMs :"
+	echo -e "Starting workload in $(cat $VMS | wc -l) VMs..\n"
 	for IP in `cat $VMS`; do
 		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep $IP | cut -f 1) &
 	done
@@ -221,9 +227,9 @@ power_off_node $IDLE_NODES
 ./collect_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
 sleep 5
-start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR/workload $VMS_IPS &
-sleep 5
-scenario_par-par $RESULTS_DIR/scenario_par-par
+#start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR/workload $VMS_IPS &
+#sleep 5
+decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
 sleep 5
 kill -TERM $COLLECT_ENERGY_TASK
 wait
