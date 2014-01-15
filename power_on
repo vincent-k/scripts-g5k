@@ -10,6 +10,9 @@ function wait_for_boot {
 	while ! ping -c 1 $NODE > /dev/null; do
 		sleep 2
 	done
+
+	# Wait 30 more seconds (start services)
+	sleep 30
 }
 
 
