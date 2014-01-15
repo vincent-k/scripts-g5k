@@ -136,10 +136,12 @@ function decommissioning_par-par {
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		migrate_par $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC &
+		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		PIDS+="$!\n"
 	done
-	wait
-	echo -e "#######################################################################\n"
+	for P in `echo -e $PIDS`; do wait $P; done
+	echo -e "###########################################################################\n"
 }
 
 function decommissioning_par-seq {
@@ -154,10 +156,12 @@ function decommissioning_par-seq {
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		migrate_seq $NODE_SRC $NODE_DEST $SCENARIO_DIR/$NODE_SRC &
+		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		migrate_node_seq $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		PIDS+="$!\n"
 	done
-	wait
-	echo -e "#######################################################################\n"
+	for P in `echo -e $PIDS`; do wait $P; done
+	echo -e "###########################################################################\n"
 }
 
 function decommissioning_seq-par {
