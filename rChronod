@@ -103,10 +103,11 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
             self.reply("Counter '" + token + "' does not exist")              
-        del starts[token]
-        del stops[token]
-        self.send_response(200)
-        self.end_headers()
+        else:    
+            del starts[token]
+            del stops[token]
+            self.send_response(200)
+            self.end_headers()
         stdout.flush()
 
 if len(argv) < 2 or argv[1] in ["-h", "--help"]:
