@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+from sys import *
+import httplib
+import re
+
+# Default port
+port = 85439
+
+if len(argv) < 3 or argv[0] in ["-h", "--help"]:
+    print("rChrono url [(start|stop|delete|get) x | list] ")
+    exit(1)
+
+if re.search(":", argv[1]) != None:
+    host,port = argv[1].split(":")
+    port = int(port)
+else:
+    host = argv[1]
+
+op = argv[2]
+
+def printIfSucceed(res, expectedCode):
+    if res.status != expectedCode:
+        stderr.write(res.read()+"\n")
+        exit(1)
+    r = res.read()
+    if len(r) > 0:
+        stdout.write(r+"\n")
+
+try:
+    conn = httplib.HTTPConnection(host, port)
+    if op == "list":    
+        conn.request("GET", "/")        
+        res = conn.getresponse()
+        printIfSucceed(res, 200)
+    elif op == "get":
+        conn.request("GET", "/" + argv[3])
+        res = conn.getresponse()
+        printIfSucceed(res, 200)
+    elif op == "delete":
+        conn.request("DELETE", "/" + argv[3])
+        res = conn.getresponse()
+        printIfSucceed(res, 200)
+    elif op == "start":
+        conn.request("POST", "/" + argv[3])        
+        res = conn.getresponse()        
+        printIfSucceed(res, 200)
+    elif op == "stop":
+        res = conn.request("PUT", "/" + argv[3])        
+        printIfSucceed(res, 200)
+    else:
+        stderr.write("Unsupported operation '" + op + "'")
+        exit(1)
+except Exception as err:
+    stderr.write(str(err) + "\n")
+    exit(1)
+
+exit(0)
