@@ -20,7 +20,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         pass
 
     def toJSON(self, t):
-        j = "{'id': " + t
+        j = "{'id': '" + t + "'"
         if t in starts:
             j += ", 'start': "
             j += str(starts[t])
