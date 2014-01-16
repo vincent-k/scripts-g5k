@@ -4,6 +4,7 @@
 NODE="$1"
 BMC_USER="$2"
 BMC_MDP="$3"
+NOTIF_DIR="$4"
 
 # Set ssh parameters
 SSH_USER="root"
@@ -24,6 +25,15 @@ if [ -n "$NODE" ]; then
 
 	if [ -f "$NODE" ]; then
 		echo -ne "Powering off $(cat $NODE | wc -l) nodes.."
+
+		# If NOTIF_DIR is specified, the node will alert the CTL when it is up again
+		if [ -n "$NOTIF_DIR" ]; then
+			for N in `cat $NODE`; do
+				ssh $SSH_USER@$N $SSH_OPTS "sed -i 's;<REMOTE_HOST>;$(hostname);g' /etc/init.d/bootNotify"
+				ssh $SSH_USER@$N $SSH_OPTS "sed -i 's;<REMOTE_DIR>;$NOTIF_DIR;g' /etc/init.d/bootNotify"
+				ssh $SSH_USER@$N $SSH_OPTS "update-rc.d bootNotify defaults"
+			done
+		fi
 
 		# Using kapower
 		#kapower3 --off -f $NODE >/dev/null

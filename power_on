@@ -3,6 +3,7 @@
 NODE="$1"
 BMC_USER="$2"
 BMC_MDP="$3"
+NOTIF_DIR="$4"
 
 function wait_for_boot {
 	local NODE="$1"
@@ -10,6 +11,14 @@ function wait_for_boot {
 	while ! ping -c 1 $NODE > /dev/null; do
 		sleep 2
 	done
+
+	# If NOTIF_DIR is specified, wait until the booted node create a file (with his hostname) in this folder
+	if [ -n "$NOTIF_DIR" ]; then
+		while [ ! -f "$NOTIF_DIR/$NODE" ]; do
+			sleep 2
+		done
+		rm -rf $NOTIF_DIR/$NODE
+	fi
 
 	# Wait 30 more seconds (start services)
 	sleep 30
