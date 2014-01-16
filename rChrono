@@ -18,12 +18,12 @@ else:
 
 op = argv[2]
 
-def printIfSucceed(res, expectedCode):
+def printIfSucceed(res, expectedCode, o):    
     if res.status != expectedCode:
         stderr.write(res.read()+"\n")
         exit(1)
     r = res.read()
-    if len(r) > 0:
+    if o:
         stdout.write(r+"\n")
 
 try:
@@ -31,22 +31,23 @@ try:
     if op == "list":    
         conn.request("GET", "/")        
         res = conn.getresponse()
-        printIfSucceed(res, 200)
+        printIfSucceed(res, 200, True)
     elif op == "get":
         conn.request("GET", "/" + argv[3])
         res = conn.getresponse()
-        printIfSucceed(res, 200)
+        printIfSucceed(res, 200, True)
     elif op == "delete":
         conn.request("DELETE", "/" + argv[3])
         res = conn.getresponse()
-        printIfSucceed(res, 200)
+        printIfSucceed(res, 200, False)
     elif op == "start":
         conn.request("POST", "/" + argv[3])        
         res = conn.getresponse()        
-        printIfSucceed(res, 200)
+        printIfSucceed(res, 201, False)
     elif op == "stop":
-        res = conn.request("PUT", "/" + argv[3])        
-        printIfSucceed(res, 200)
+        conn.request("PUT", "/" + argv[3])        
+        res = conn.getresponse()
+        printIfSucceed(res, 200, True)
     else:
         stderr.write("Unsupported operation '" + op + "'")
         exit(1)

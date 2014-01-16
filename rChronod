@@ -46,9 +46,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             if token not in starts:
                 self.send_response(404)
                 self.end_headers()                            
-                self.wfile.write("Counter '" + token + "' does not exist")
-                if verbose:
-                    print("Counter '" + token + "' does not exist")
+                self.reply("Counter '" + token + "' does not exist")
             else:
                 self.send_response(200)
                 self.send_header("Content-type", "text/json")
@@ -66,7 +64,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         elif token in starts: #Already started
             self.send_response(409)
             self.end_headers()
-            reply("Counter '" + token + "' already exists")
+            self.reply("Counter '" + token + "' already exists")
         else:
             starts[token] = int(round(time.time() * 1000)) #Start the counter
             self.send_response(201)
@@ -86,17 +84,17 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if not token in starts:
             self.send_response(404)
             self.end_headers()
-            reply("Counter '" + token + "' does not exists")
+            self.reply("Counter '" + token + "' does not exists")
         elif token in stops: #Already stopped
             self.send_response(409)
             self.end_headers()
-            reply("Counter '" + token + "' already stopped")            
+            self.reply("Counter '" + token + "' already stopped")            
         else:
-            stops[token] = int(round(time.time() * 1000)) #Start the counter                            
+            stops[token] = int(round(time.time() * 1000)) #Stop the counter                            
             self.send_response(200)
             self.send_header("Content-type", "text/json")
             self.end_headers()
-            self.wfile.write(self.toJSON(token))              
+            self.reply(self.toJSON(token))              
         stdout.flush()
 
     def do_DELETE(self):
@@ -104,7 +102,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if not token in starts:
             self.send_response(404)
             self.end_headers()
-            reply("Counter '" + token + "' does not exist")              
+            self.reply("Counter '" + token + "' does not exist")              
         del starts[token]
         del stops[token]
         self.send_response(200)
