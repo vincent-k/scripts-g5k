@@ -16,7 +16,7 @@ function power_on_node {
 	local LOG_DIR="$2"
 
 	local START=$(date +%s)
-	./power_on $NODE $BMC_USER $BMC_MDP
+	./power_on $NODE $BMC_USER $BMC_MDP /tmp
 	local STOP=$(date +%s)
 
 	if [ -n "$LOG_DIR" ]; then
@@ -30,7 +30,7 @@ function power_off_node {
 	local LOG_DIR="$2"
 
 	local START=$(date +%s)
-	./power_off $NODE $BMC_USER $BMC_MDP
+	./power_off $NODE $BMC_USER $BMC_MDP /tmp
 	local STOP=$(date +%s)
 
 	if [ -n "$LOG_DIR" ]; then
