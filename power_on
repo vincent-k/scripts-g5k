@@ -18,10 +18,10 @@ function wait_for_boot {
 			sleep 2
 		done
 		rm -rf $NOTIF_DIR/$NODE
+	else
+		# Wait 30 more seconds (start services)
+		sleep 30
 	fi
-
-	# Wait 30 more seconds (start services)
-	sleep 30
 }
 
 
