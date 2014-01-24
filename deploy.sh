@@ -422,6 +422,7 @@ function start_expe {
 	# Send some scripts (dependencies)
 	send_to_ctl ./create_backing_img
 	send_to_ctl ./handbrake_workload
+	send_to_ctl ./apache_workload
 	send_to_ctl ./power_on
 	send_to_ctl ./power_off
 	send_to_ctl ./migrate_vm
