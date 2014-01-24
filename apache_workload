@@ -1,0 +1,42 @@
+#!/bin/bash
+
+NB_REQ="$1"
+CONCURRENT_REQ="$2"
+REMOTE_USER="$3"
+REMOTE_IP="$4"
+REMOTE_OUTPUT_FILE="$5"
+
+APACHE_LOGFILE="/var/log/apache2/access.log"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+
+# Clean apache access logfile
+echo -n > $APACHE_LOGFILE
+
+# Start benchmarking
+ab -n $NB_REQ -c $CONCURRENT_REQ http://localhost:80/ >/dev/null 2>&1
+sync
+
+START_TIME="head -1 $APACHE_LOGFILE | cut -d' ' -f1"
+END_TIME="tail -1 $APACHE_LOGFILE | cut -d' ' -f1"
+
+TIME=$(($START_TIME))
+
+# Clean results file
+echo -n > /tmp/results
+
+# Get the requests rate per second
+while [ $TIME -le $END_TIME ]; do
+	echo -e "$TIME,$(cat $APACHE_LOGFILE | grep $TIME | wc -l)" >> /tmp/results
+	TIME=$(($TIME + 1))
+done
+
+# Clean apache access logfile
+sync
+echo -n > $APACHE_LOGFILE
+
+
+# Send results to the remote host
+sync
+scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
+
