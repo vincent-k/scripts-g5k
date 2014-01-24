@@ -92,17 +92,18 @@ function migrate_node_par {
 	local NODE_SRC="$1"
 	local NODE_DEST="$2"
 	local MIGRATE_DIR="$3" && mkdir "$MIGRATE_DIR"
+	local PIDS=""
 
 	# Boot the new node and get boot time
 	power_on_node $NODE_DEST $MIGRATE_DIR
 
 	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
-		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
-		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date)" | tee -a $MIGRATE_DIR/$VM &
+		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
+		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM &
+		PIDS+="$!\n"
 	done
-
-	wait
-
+	for P in `echo -e $PIDS`; do wait $P; done
+	
 	# Shutdown the old node and get halt time
 	power_off_node $NODE_SRC $MIGRATE_DIR
 }
@@ -120,8 +121,8 @@ function migrate_node_seq {
 	
 		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
 
-		echo "START $VM : $(date)" | tee $MIGRATE_DIR/$VM
-                migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date)" | tee -a $MIGRATE_DIR/$VM
+		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
+                migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM
         done
 
 	# Shutdown the old node and get halt time
@@ -207,13 +208,15 @@ function start_workload_in_vms {
 	local SCRIPT_OPTIONS="$2"
 	local RESULTS_DIR="$3"
 	local VMS="$4"
-
+	local PIDS=""
 	mkdir $RESULTS_DIR
+
 	echo -e "Starting workload in $(cat $VMS | wc -l) VMs..\n"
 	for IP in `cat $VMS`; do
-		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep $IP | cut -f 1) &
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep $IP | head -1 | cut -f 1) &
+		PIDS+="$!\n"
 	done
-	wait
+	for P in `echo -e $PIDS`; do wait $P; done
 }
 
 function get_files_back {
