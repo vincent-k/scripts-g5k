@@ -32,7 +32,10 @@ OK Installer ipmitools (+freeipmi) sur l'img des noeuds
 OK Resoudre le probleme de la configuration reseau des noeuds => ecrasement du fichier 'interfaces' < SOLUTION : suppression de rc.local apres le premier boot + penser a desactiver le stp
 OK Creer un script qui capture et renvoie la consommation d'energie en Watt
 OK Rendre les configurations des noeuds persistantes apres reboot : config_infiniband + mount_nfs_storage
-- Tester le decommissioning ! plotter et interpreter les resultats
+- Script pour test de charge d'un noeud
+- Reset d'une expe sans redeploiement
+- Mettre les images de backing hors de la RAM
+- Plotter les resultats du workload apache
 - Mettre en place une experimentation de type : [x * 1 cpu nodes > 1 * x cpu node]
 - Faire fonctionner NFS/RDMA
 - Experimentations de plus grande taille pour l'expe finale (equivalent d'un "plusieurs clusters")
