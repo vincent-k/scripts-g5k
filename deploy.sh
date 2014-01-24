@@ -76,7 +76,7 @@ function deploy_ctl {
 			echo -e "Retrying ($RETRY time(s)) :\n"
 			deploy_ctl $(($RETRY - 1))
 		else
-			echo -e "Cancelling all jobs submissions .."
+			echo -e "Cancelling all jobs submissions.."
 			# Cancel the job
 			oardel $OAR_JOB_ID
 
@@ -107,7 +107,7 @@ function deploy_nfs_server {
 			echo -e "Retrying ($RETRY time(s)) :\n"
 			deploy_nfs_server $(($RETRY - 1))
 		else
-			echo -e "Cancelling all jobs submissions .."
+			echo -e "Cancelling all jobs submissions.."
 			# Cancel the job
 			oardel $OAR_JOB_ID
 
@@ -134,7 +134,7 @@ function deploy_nodes {
 	diff -u $NODES_LIST $NODES_OK
 	echo -e "##########################################################\n"
 
-	echo -ne "Waiting for nodes networking configuration .." && sleep 60 && echo -e "\n"
+	echo -ne "Waiting for nodes networking configuration.." && sleep 60 && echo -e "\n"
 }
 
 function define_hosting_nodes {
@@ -153,7 +153,7 @@ function send_to_ctl {
 
 function configure_infiniband_in_nodes {
 
-	echo -en "Configuring Infiniband to all deployed nodes .."
+	echo -en "Configuring Infiniband to all deployed nodes.."
 
 	# Configure infiniband interface into CTL
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
@@ -174,7 +174,7 @@ function configure_infiniband_in_nodes {
 
 function configure_bmc_in_nodes {
 
-	echo -en "Configuring BMC in all deployed nodes .."
+	echo -en "Configuring BMC in all deployed nodes.."
 
 	# Configure infiniband interface into CTL
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
@@ -223,10 +223,10 @@ function mount_nfs_storage {
 	# Use infiniband interface if declared in config file
 	if [ -n "$NFS_INFINIBAND_IF" ]; then
 		IP_NFS_SRV=$(host `cat $NFS_SRV | cut -d'.' -f 1`-$NFS_INFINIBAND_IF.`cat $NFS_SRV | cut -d'.' -f 2,3,4` | awk '{print $4;}')
-		echo -ne "Set up NFS using infiniband $NFS_INFINIBAND_IF interface .."
+		echo -ne "Set up NFS using infiniband $NFS_INFINIBAND_IF interface.."
 	else	
 		IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
-		echo -ne "Set up NFS  using standard eth0 interface .."
+		echo -ne "Set up NFS  using standard eth0 interface.."
 	fi
 
 	# Use ram for NFS share and start server (cluster edel => 24 Go max)
@@ -236,12 +236,12 @@ function mount_nfs_storage {
 	echo -e ".\nNFS Server configured and started"
 
 	# Mount NFS share to the CTL
-	echo -ne "Mounting share in the CTL .."
+	echo -ne "Mounting share in the CTL.."
 	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
 	echo -e ". DONE"
 
 	# Mount NFS share to all nodes and make the share persistent	
-	echo -ne "Mounting share in all nodes .."
+	echo -ne "Mounting share in all nodes.."
 	for NODE in `cat $NODES_OK`; do
 		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync" &
 		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab" &
