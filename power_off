@@ -22,7 +22,6 @@ function wait_for_halt {
 }
 
 if [ -n "$NODE" ]; then
-
 	if [ -f "$NODE" ]; then
 		echo -ne "Powering off $(cat $NODE | wc -l) nodes.."
 
@@ -60,6 +59,13 @@ if [ -n "$NODE" ]; then
 		fi
 	else
 		echo -ne "Powering off node '$NODE' .."
+
+		# If NOTIF_DIR is specified, the node will alert the CTL when it is up again
+		if [ -n "$NOTIF_DIR" ]; then
+			ssh $SSH_USER@$NODE $SSH_OPTS "sed -i 's;<REMOTE_HOST>;$(hostname);g' /etc/init.d/bootNotify"
+			ssh $SSH_USER@$NODE $SSH_OPTS "sed -i 's;<REMOTE_DIR>;$NOTIF_DIR;g' /etc/init.d/bootNotify"
+			ssh $SSH_USER@$NODE $SSH_OPTS "update-rc.d bootNotify defaults"
+		fi
 
 		# Using kapower
 		#kapower3 --off -m $NODE >/dev/null
