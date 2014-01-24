@@ -46,8 +46,8 @@ RESOLV_CONF+="$(g5k-subnets -a | awk '{ print "\nnameserver "$7 }')"
 ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$RESOLV_CONF\" > /mnt/etc/resolv.conf"
 
 # Create a profile script to set proxy environment variables
-PROXY_ENV="export http_proxy='http://proxy:3128'\n"
-PROXY_ENV+="export https_proxy='http://proxy:3128'"
+PROXY_ENV="export http_proxy='http://$(host proxy | awk '{print $4;}'):3128'\n"
+PROXY_ENV+="export https_proxy='http://$(host proxy | awk '{print $4;}'):3128'"
 ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$PROXY_ENV\" > /mnt/etc/profile.d/proxy.sh"
 
 # Copy config files
