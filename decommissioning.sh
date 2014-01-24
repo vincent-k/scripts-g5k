@@ -235,15 +235,23 @@ VIRSH_OPTS=" --live "
 rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"
 
 power_off_node $IDLE_NODES
+sleep 5
 ./collect_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
 sleep 5
 #start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR/workload $VMS_IPS &
-#sleep 5
+#start_workload_in_vms ./handbrake_workload "/opt/Sintel.2010.1080p.mkv" $RESULTS_DIR/workload $VMS_IPS &
+#start_workload_in_vms ./handbrake_workload "/opt/bluray-1080p-2go.mkv" $RESULTS_DIR/workload $VMS_IPS &
+start_workload_in_vms ./apache_workload "100000000 100" $RESULTS_DIR/workload $VMS_IPS &
+WORKLOAD=$!
+sleep 5
 decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
+#decommissioning_seq-seq $RESULTS_DIR/decommissioning_seq-seq
+#decommissioning_par-seq $RESULTS_DIR/decommissioning_par-seq
+#decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
 sleep 5
 kill -TERM $COLLECT_ENERGY_TASK
-wait
+wait $WORKLOAD
 get_files_back
 
 echo -e "\nEND OF DECOMMISSIONING"
