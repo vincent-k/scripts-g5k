@@ -21,7 +21,10 @@ function power_on_node {
 
 	if [ -n "$LOG_DIR" ]; then
 		echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
+		echo -e "START\t$START\nSTOP\t$STOP" > $LOG_DIR/boot
 	fi
+
+	sleep 5
 }
 
 function power_off_node {
@@ -35,6 +38,7 @@ function power_off_node {
 
 	if [ -n "$LOG_DIR" ]; then
 		echo -e "$(($STOP - $START))" > $LOG_DIR/halt_time
+		echo -e "START\t$START\nSTOP\t$STOP" > $LOG_DIR/halt
 	fi
 }
 
