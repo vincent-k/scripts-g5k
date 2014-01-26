@@ -242,7 +242,7 @@ sleep 5
 #start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR/workload $VMS_IPS &
 #start_workload_in_vms ./handbrake_workload "/opt/Sintel.2010.1080p.mkv" $RESULTS_DIR/workload $VMS_IPS &
 #start_workload_in_vms ./handbrake_workload "/opt/bluray-1080p-2go.mkv" $RESULTS_DIR/workload $VMS_IPS &
-start_workload_in_vms ./apache_workload "100000000 100" $RESULTS_DIR/workload $VMS_IPS &
+start_workload_in_vms ./apache_workload "100000000 50" $RESULTS_DIR/workload $VMS_IPS &
 WORKLOAD=$!
 sleep 5
 decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
