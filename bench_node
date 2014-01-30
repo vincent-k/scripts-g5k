@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Get variables from config file
+. ./config
+
+NODE="$1"
+
+VM_NB=4
+REQUESTS=100000
+CONCURRENCY=50
+
+OUTPUT_DIR="`pwd`/stats"
+
+mkdir $OUTPUT_DIR
+
+
+# Get VM names
+VMS=`virsh -c qemu+ssh://$NODE/system list --all | grep vm- | awk '{print $2;}'`
+
+# Start energy consumption collect
+./collect_energy_consumption $NODE $BMC_USER $BMC_MDP $OUTPUT_DIR/consumption &
+COLLECT_ENERGY_TASK=$!
+sleep 5
+
+# Execute workload on VMs
+for i in {1..$VM_NB}; do
+	for j in {1..$i}; do
+		VM=$(echo -e "$VMS" | head -$j | tail -1)
+		IP=$(cat $IPS_NAMES | grep -P "$VM\t")
+		ssh $SSH_USER@$IP $SSH_OPTS "ab -n $REQUESTS -c $CONCURRENCY -g /tmp/$VM-stats-$i http://localhost:80/ > /tmp/$VM-summary-$i 2>&1" &
+	done
+	wait
+	sleep 5
+done
+
+# Stop energy collect
+kill -TERM $COLLECT_ENERGY_TASK
+
+# Get results
+for VM in `echo -e "$VMS"`; do
+	IP=$(cat $IPS_NAMES | grep -P "$VM\t")
+
+	ssh $SSH_USER@$IP $SSH_OPTS "tar czf /tmp/$VM-stats.tgz /tmp/*stats* /tmp/*summary*"
+	scp $SSH_OPTS $SSH_USER@$IP:/tmp/$VM-stats.tgz ./$OUTPUT_DIR/
+done
