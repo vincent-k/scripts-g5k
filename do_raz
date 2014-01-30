@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Get variables from config file
+. ./config
+
+# Send required files
+scp $SSH_OPTS -r $OUTPUT_DIR $SSH_USER@`cat $CTL_NODE`:
+scp $SSH_OPTS ./config $SSH_USER@`cat $CTL_NODE`:
+scp $SSH_OPTS ./power_on $SSH_USER@`cat $CTL_NODE`:
+
+# RAZ
+ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS 'bash -s' < raz.sh
