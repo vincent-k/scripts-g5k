@@ -14,12 +14,17 @@ LOCAL_IP=$(ip a | grep inet | grep ' br0' | awk '{print $2;}' | cut -d'/' -f1)
 SSH_USER="root"
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 
+function stop {
+	ssh $SSH_OPTS $SSH_USER@$VM_IP "kill -TERM $PID"
+}
+trap stop SIGTERM SIGINT SIGKILL
 
 # Send script to the VM
 scp $SSH_OPTS $WORKLOAD_SCRIPT $SSH_USER@$VM_IP: >/dev/null
 
 # Start the remote task in background
 ssh $SSH_OPTS $SSH_USER@$VM_IP "nohup ~$SSH_USER/$(basename $WORKLOAD_SCRIPT) $SCRIPT_OPTIONS $LOCAL_USER $LOCAL_IP $RESULTS_DIR/$VM_NAME >/dev/null 2>&1 &"
+PID=`ssh $SSH_OPTS $SSH_USER@$VM_IP "ps aux | grep $(basename $WORKLOAD_SCRIPT) | grep -v grep | tail -1" | awk '{print $2;}'`
 
 # Wait for the results (end of workload)
 while [ ! -f $RESULTS_DIR/$VM_NAME ]; do
