@@ -229,29 +229,52 @@ function get_files_back {
 ## MAIN
 
 RESULTS_DIR="decommissioning_results"
-VIRSH_OPTS=" --live "
+VIRSH_OPTS=" --live --p2p --timeout 60 "
+#VIRSH_OPTS=" --live "
 #VIRSH_OPTS=" --live --copy-storage-inc "
 
 rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"
 
+# Power off destination nodes
 power_off_node $IDLE_NODES
 sleep 5
+
+# Start collecting energy consumption
 ./collect_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
 sleep 5
+
 #start_workload_in_vms ./handbrake_workload "/opt/big_buck_bunny_480p_h264.mov" $RESULTS_DIR/workload $VMS_IPS &
 #start_workload_in_vms ./handbrake_workload "/opt/Sintel.2010.1080p.mkv" $RESULTS_DIR/workload $VMS_IPS &
 #start_workload_in_vms ./handbrake_workload "/opt/bluray-1080p-2go.mkv" $RESULTS_DIR/workload $VMS_IPS &
-start_workload_in_vms ./apache_workload "100000000 50" $RESULTS_DIR/workload $VMS_IPS &
-WORKLOAD=$!
+
+# Start workload in VMs
+PIDS=""
+echo -e "\nStarting workload in $(cat $VMS_IPS | wc -l) VMs..\n"
+mkdir $RESULTS_DIR/workload
+for IP in `cat $VMS_IPS`; do
+	./start_workload_in_vm ./apache_workload "100000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
+	PIDS+="$!\n"
+done
+#start_workload_in_vms ./apache_workload "100000000 30" $RESULTS_DIR/workload $VMS_IPS &
 sleep 5
-decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
+
+# Decommissioning
+#decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
 #decommissioning_seq-seq $RESULTS_DIR/decommissioning_seq-seq
 #decommissioning_par-seq $RESULTS_DIR/decommissioning_par-seq
-#decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
+decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
 sleep 5
+
+# Stop energy collect and workloads
 kill -TERM $COLLECT_ENERGY_TASK
-wait $WORKLOAD
+for P in `echo -e $PIDS`; do kill -TERM $P; done
+sleep 300
+
+#./get_workload_stats $VM_BACKING_IMG_DIR $RESULTS_DIR/workload_img
+#sleep 5
+
+# Get results
 get_files_back
 
 echo -e "\nEND OF DECOMMISSIONING"
