@@ -30,7 +30,7 @@ if [ -n "$NODE" ]; then
 			for N in `cat $NODE`; do
 				ssh $SSH_USER@$N $SSH_OPTS "sed -i 's;<REMOTE_HOST>;$(hostname);g' /etc/init.d/bootNotify"
 				ssh $SSH_USER@$N $SSH_OPTS "sed -i 's;<REMOTE_DIR>;$NOTIF_DIR;g' /etc/init.d/bootNotify"
-				ssh $SSH_USER@$N $SSH_OPTS "update-rc.d bootNotify defaults"
+				ssh $SSH_USER@$N $SSH_OPTS "update-rc.d bootNotify defaults >/dev/null 2>&1"
 			done
 		fi
 
