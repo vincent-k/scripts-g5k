@@ -189,12 +189,13 @@ function start_expe {
 	send_to_ctl ./config
 
 	# Send some scripts (dependencies)
-	send_to_ctl ./create_backing_img
 	send_to_ctl ./power_on
 	send_to_ctl ./power_off
+	send_to_ctl ./create_backing_img
 	send_to_ctl ./migrate_vm
 	send_to_ctl ./collect_energy_consumption
 	send_to_ctl ./start_workload_in_vm
+	send_to_ctl ./get_workload_stats
 	send_to_ctl ./handbrake_workload
 	send_to_ctl ./apache_workload
 	
