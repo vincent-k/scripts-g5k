@@ -213,7 +213,7 @@ function start_workload_in_vms {
 
 	echo -e "\nStarting workload in $(cat $VMS | wc -l) VMs..\n"
 	for IP in `cat $VMS`; do
-		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep $IP | head -1 | cut -f 1) &
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 		PIDS+="$!\n"
 	done
 	for P in `echo -e $PIDS`; do wait $P; done
