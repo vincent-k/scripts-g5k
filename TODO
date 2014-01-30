@@ -32,10 +32,17 @@ OK Installer ipmitools (+freeipmi) sur l'img des noeuds
 OK Resoudre le probleme de la configuration reseau des noeuds => ecrasement du fichier 'interfaces' < SOLUTION : suppression de rc.local apres le premier boot + penser a desactiver le stp
 OK Creer un script qui capture et renvoie la consommation d'energie en Watt
 OK Rendre les configurations des noeuds persistantes apres reboot : config_infiniband + mount_nfs_storage
-- Script pour test de charge d'un noeud
-- Reset d'une expe sans redeploiement
-- Mettre les images de backing hors de la RAM
-- Plotter les resultats du workload apache
+OK Script pour test de charge d'un noeud
+OK Reset d'une expe sans redeploiement
+OK Mettre les images de backing hors de la RAM
+OK Plotter les resultats du workload apache
+- Analyser le bench complet d'un noeud (workload stats/summary + consumption)
+- Verifier la coherence des 'pourcentages de req' en fonction de la duree du workload (comparer long et court terme sans migration)
+- Trouver le 'nb de req concurrente' ideal pour le bench d'apache (bruteforce from 100) ?? cibler les migrations intra-rack! pour pas faire nimp niveau reseau/BP ++ lancer pdt la nuit pour limiter les transferts concurrents
+- Ajouter la possibilite de demander un switch unique pour un nombre de noeud defini ("nodes=x/switch=1")
+- Tester les decommissioning inter-racks sur edel et analyser la BP reseau dispo par rack => trouver le 'nb de req concurrente' ideal
+- Rendre l'ensemble des scripts plus autonomes: detection d'erreurs Noeud/VM -> corrections -> redeploiement/repreparation ..
+
 - Mettre en place une experimentation de type : [x * 1 cpu nodes > 1 * x cpu node]
 - Faire fonctionner NFS/RDMA
 - Experimentations de plus grande taille pour l'expe finale (equivalent d'un "plusieurs clusters")
