@@ -281,7 +281,7 @@ fi
 if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then configure_bmc_in_nodes ; fi
 
 # Prepare nodes
-./prepare.sh $VM_BACKING_IMG_DIR
+./prepare.sh $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR
 
 echo -e "\nALL FINISHED !"
 
