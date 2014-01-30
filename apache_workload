@@ -50,6 +50,7 @@ function stop {
 
 	# Send results to the remote host
 	#sync
+	scp $SSH_OPTS /tmp/summary $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE.summary >/dev/null
 	scp $SSH_OPTS /tmp/stats $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE.stats >/dev/null
 	scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
 
@@ -62,7 +63,7 @@ trap stop SIGTERM SIGINT SIGKILL
 echo -n > $APACHE_LOGFILE
 
 # Start benchmarking
-ab -n $NB_REQ -c $CONCURRENT_REQ -g /tmp/stats http://localhost:80/ >/dev/null 2>&1 &
+ab -n $NB_REQ -c $CONCURRENT_REQ -g /tmp/stats http://localhost:80/ >/tmp/summary 2>&1 &
 PID=$!
 
 while [ true ]; do
