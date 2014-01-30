@@ -219,6 +219,14 @@ function mount_shared_storage {
 
 function mount_nfs_storage {
 
+	# Change the remote directory to the shared storage (base img)
+	VM_BASE_IMG_DIR="/data/nfs/base_img"
+
+	# Define backing img directory if necessary
+	if [ -n "$BACKING_DIR" ]; then
+		VM_BACKING_IMG_DIR="/data/nfs/$BACKING_DIR"
+	fi
+
 	echo -e "################### MOUNT NFS STORAGE ####################"
 	# Use infiniband interface if declared in config file
 	if [ -n "$NFS_INFINIBAND_IF" ]; then
@@ -249,12 +257,6 @@ function mount_nfs_storage {
 	wait
 	echo -e ". DONE"
 	echo -e "##########################################################\n"
-
-	# Change the remote directory to the shared storage (base img)
-	VM_BASE_IMG_DIR="/data/nfs"
-
-	# Define backing img directory if necessary
-	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
 }
 
 
