@@ -59,6 +59,8 @@ function prepare_vms_in_node {
 	local VM_INDEX=$1
 	local NODE="$2"
 
+	echo -n > $IPS_NAMES
+
 	for (( i=0 ; i<$NB_VMS_PER_NODE ; i++ )); do
 		local VM_NUM=$(($VM_INDEX + $i))
 		local IP=`cat $IPS_MACS | head -$VM_NUM | tail -1 | cut -f1`
@@ -100,9 +102,6 @@ function create_backing_imgs_in_node {
 	local NODE_IMG="$VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME"
 
 	# Create remote backing dir
-	if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -d $VM_BACKING_IMG_DIR ]'' ); then	
-		ssh $SSH_USER@$NODE $SSH_OPTS "rm -rf $VM_BACKING_IMG_DIR 2>/dev/null"
-	fi
 	ssh $SSH_USER@$NODE $SSH_OPTS "mkdir $VM_BACKING_IMG_DIR 2>/dev/null"
 
 	for (( i=0 ; i<$NB_VMS_PER_NODE ; i++ )); do
