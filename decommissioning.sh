@@ -211,7 +211,7 @@ function start_workload_in_vms {
 	local PIDS=""
 	mkdir $RESULTS_DIR
 
-	echo -e "Starting workload in $(cat $VMS | wc -l) VMs..\n"
+	echo -e "\nStarting workload in $(cat $VMS | wc -l) VMs..\n"
 	for IP in `cat $VMS`; do
 		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep $IP | head -1 | cut -f 1) &
 		PIDS+="$!\n"
