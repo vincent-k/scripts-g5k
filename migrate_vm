@@ -7,5 +7,6 @@ VIRSH_OPTS="$4"
 
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 
-virsh --connect qemu+ssh://$NODE_SRC/system migrate $VIRSH_OPTS $VM_NAME qemu+ssh://$NODE_DEST/system
+#virsh --connect qemu+ssh://$NODE_SRC/system migrate $VIRSH_OPTS $VM_NAME qemu+ssh://$NODE_DEST/system
+virsh --connect qemu+tcp://$NODE_SRC/system migrate $VIRSH_OPTS $VM_NAME qemu+tcp://$NODE_DEST/system
 
