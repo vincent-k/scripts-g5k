@@ -234,25 +234,31 @@ function mount_nfs_storage {
 		echo -ne "Set up NFS using infiniband $NFS_INFINIBAND_IF interface.."
 	else	
 		IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
-		echo -ne "Set up NFS  using standard eth0 interface.."
+		echo -ne "Set up NFS using standard eth0 interface.."
 	fi
 
-	# Use ram for NFS share and start server (cluster edel => 24 Go max)
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=15G tmpfs /data/nfs && sync"
+	# Use ram for vm_base in NFS share and start server (cluster edel => 24 Go max)
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mkdir -p /data/nfs && sync"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=15G tmpfs /data/nfs"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
 	echo -e ".\nNFS Server configured and started"
 
 	# Mount NFS share to the CTL
 	echo -ne "Mounting share in the CTL.."
-	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs/{base_img,$BACKING_DIR} && sync"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BASE_IMG_DIR"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BACKING_IMG_DIR"
 	echo -e ". DONE"
 
 	# Mount NFS share to all nodes and make the share persistent	
 	echo -ne "Mounting share in all nodes.."
 	for NODE in `cat $NODES_OK`; do
-		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && mount $IP_NFS_SRV:/data/nfs /data/nfs && sync" &
-		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab" &
+		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs/{base_img,$BACKING_DIR} && sync"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BASE_IMG_DIR"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BACKING_IMG_DIR"
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t$VM_BASE_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/tmp\t$VM_BACKING_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
 	done
 	wait
 	echo -e ". DONE"
