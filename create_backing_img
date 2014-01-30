@@ -13,6 +13,8 @@ SSH_USER='root'
 SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
 
 # Create a qcow2 backing img file if it doesn't already exist
-if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ ! -e $BACKING_IMG ]'' ); then
-	ssh $SSH_USER@$NODE $SSH_OPTS "qemu-img create -f qcow2 -o backing_file=$IMG_SRC,backing_fmt=raw $BACKING_IMG >/dev/null"
+if ( ssh $SSH_USER@$NODE $SSH_OPTS ''[ -e $BACKING_IMG ]'' ); then
+	ssh $SSH_USER@$NODE $SSH_OPTS "rm -rf $BACKING_IMG 2>/dev/null"
 fi
+
+ssh $SSH_USER@$NODE $SSH_OPTS "qemu-img create -f qcow2 -o backing_file=$IMG_SRC,backing_fmt=raw $BACKING_IMG >/dev/null"
