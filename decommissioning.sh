@@ -119,7 +119,7 @@ function migrate_node_seq {
 
         for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
 	
-		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
 
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
                 migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM
@@ -141,7 +141,7 @@ function decommissioning_par-par {
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
 		migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
 		PIDS+="$!\n"
 	done
@@ -161,7 +161,7 @@ function decommissioning_par-seq {
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
 		migrate_node_seq $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
 		PIDS+="$!\n"
 	done
@@ -180,7 +180,7 @@ function decommissioning_seq-par {
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
-		echo -e "# Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
 		migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC
 	done
 	echo -e "###########################################################################\n"
