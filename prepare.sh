@@ -3,8 +3,10 @@
 # Get variables from config file
 . ./config
 
+# Get parameters
+VM_BASE_IMG_DIR="$1"
 if [ -n "$BACKING_DIR" ]; then
-	VM_BACKING_IMG_DIR="$1"
+	VM_BACKING_IMG_DIR="$2"
 fi
 
 
