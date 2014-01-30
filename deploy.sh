@@ -78,7 +78,7 @@ function deploy_ctl {
 		else
 			echo -e "Cancelling all jobs submissions.."
 			# Cancel the job
-			oardel $OAR_JOB_ID
+			#oardel $OAR_JOB_ID
 
 			# Cancel the storage reservation if exist
 			if [ -n "$SHARED_STORAGE" ]; then
@@ -109,7 +109,7 @@ function deploy_nfs_server {
 		else
 			echo -e "Cancelling all jobs submissions.."
 			# Cancel the job
-			oardel $OAR_JOB_ID
+			#oardel $OAR_JOB_ID
 
 			# Cancel the storage reservation if exist
 			if [ -n "$SHARED_STORAGE" ]; then
