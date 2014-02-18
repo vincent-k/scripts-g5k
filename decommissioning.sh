@@ -253,7 +253,7 @@ PIDS=""
 echo -e "\nStarting workload in $(cat $VMS_IPS | wc -l) VMs..\n"
 mkdir $RESULTS_DIR/workload
 for IP in `cat $VMS_IPS`; do
-	./start_workload_in_vm ./apache_workload "100000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
+	./start_workload_in_vm ./apache_workload "10000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 	PIDS+="$!\n"
 done
 #start_workload_in_vms ./apache_workload "100000000 30" $RESULTS_DIR/workload $VMS_IPS &
