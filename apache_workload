@@ -13,9 +13,11 @@ SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/d
 function stop {
 	#sync
 
-	# Kill ab
-	kill -INT $PID
-	wait $PID
+	# Kill ab process if exists
+	if ps -p $PID > /dev/null; then
+		kill -INT $PID
+		wait $PID
+	fi
 
 	# Get start and stop times
 	if [ -e $APACHE_LOGFILE.1 ]; then
@@ -66,7 +68,9 @@ echo -n > $APACHE_LOGFILE
 ab -n $NB_REQ -c $CONCURRENT_REQ -g /tmp/stats http://localhost:80/ >/tmp/summary 2>&1 &
 PID=$!
 
-while [ true ]; do
+while ps -p $PID > /dev/null; do
 	sleep 2
 done
+
+stop
 
