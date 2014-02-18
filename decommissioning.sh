@@ -266,13 +266,19 @@ sleep 5
 decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
 sleep 5
 
+# Terminate workloads
+#for P in `echo -e $PIDS`; do kill -TERM $P; done
+
+# Wait end of workloads
+for P in `echo -e $PIDS`; do wait $P; done
+
 # Stop energy collect and workloads
 kill -TERM $COLLECT_ENERGY_TASK
-for P in `echo -e $PIDS`; do kill -TERM $P; done
-sleep 300
 
+# Get workload stats manually
 #./get_workload_stats $VM_BACKING_IMG_DIR $RESULTS_DIR/workload_img
-#sleep 5
+
+sleep 5
 
 # Get results
 get_files_back
