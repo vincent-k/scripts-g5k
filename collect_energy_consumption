@@ -35,7 +35,7 @@ while [ true ]; do
 				get_power_consumption $N $LOG_DIR &
 			done
 		else
-			get_power_consumption $N $LOG_DIR &
+			get_power_consumption $NODE $LOG_DIR &
 		fi
 		wait
 	else
