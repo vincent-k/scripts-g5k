@@ -1,0 +1,76 @@
+#!/bin/bash
+
+NB_REQ="$1"
+REQ_RATE="$2"
+REQ_TIMEOUT="$3"
+REMOTE_USER="$4"
+REMOTE_IP="$5"
+REMOTE_OUTPUT_FILE="$6"
+PID=""
+
+APACHE_LOGFILE="/var/log/apache2/access.log"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+function stop {
+	#sync
+
+	# Kill ab process if exists
+	if ps -p $PID > /dev/null; then
+		kill -INT $PID
+		wait $PID
+	fi
+
+	# Get start and stop times
+	if [ -e $APACHE_LOGFILE.1 ]; then
+		START_TIME=`head -1 $APACHE_LOGFILE.1 | cut -d' ' -f1`
+	else
+		START_TIME=`head -1 $APACHE_LOGFILE | cut -d' ' -f1`
+	fi
+	if [ -s $APACHE_LOGFILE ]; then
+		END_TIME=`tail -1 $APACHE_LOGFILE | cut -d' ' -f1`
+	else
+		if [ -e $APACHE_LOGFILE.1 ]; then
+			END_TIME=`tail -1 $APACHE_LOGFILE.1 | cut -d' ' -f1`
+		else
+			END_TIME=`tail -1 $APACHE_LOGFILE | cut -d' ' -f1`
+		fi
+	fi
+
+	TIME="$START_TIME"
+
+	# Clean results file
+	echo -n > /tmp/results
+
+	# Get the requests rate per second
+	while [ $TIME -le $END_TIME ]; do
+		if [ -e $APACHE_LOGFILE.1 ]; then
+			echo -e "$TIME,$(cat $APACHE_LOGFILE $APACHE_LOGFILE.1 | grep $TIME | wc -l)" >> /tmp/results
+		else
+			echo -e "$TIME,$(cat $APACHE_LOGFILE | grep $TIME | wc -l)" >> /tmp/results
+		fi
+		TIME=$(($TIME + 1))
+	done
+
+	# Send results to the remote host
+	#sync
+	scp $SSH_OPTS /tmp/stats $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE.stats >/dev/null
+	scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
+
+	exit 0
+}
+trap stop SIGTERM SIGINT SIGKILL
+
+
+# Clean apache access logfile
+echo -n > $APACHE_LOGFILE
+
+# Start benchmarking
+httperf --hog --server localhost --num-conn $NB_REQ --rate $REQ_RATE --timeout $REQ_TIMEOUT >/tmp/stats 2>&1 &
+PID=$!
+
+while ps -p $PID > /dev/null; do
+	sleep 2
+done
+
+stop
+
