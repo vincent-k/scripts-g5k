@@ -20,8 +20,9 @@ NFS_SRV="$OUTPUT_DIR/nfs_srv"
 NFS_INFINIBAND_IF="ib0"
 
 # NODES
-NB_NODES=5
+NB_NODES=34
 CLUSTER='edel'
+SWITCH=2
 IMG_NODES='debian-sid-qemu'
 NODES_LIST="$OUTPUT_DIR/nodes_list"
 NODES_OK="$OUTPUT_DIR/nodes_ok"
@@ -35,7 +36,7 @@ BMC_MDP='mdpbmc'
 # VMS
 VM_VCPU=2
 VM_MEM=4096
-NB_VMS_PER_NODE=2
+NB_VMS_PER_NODE=4
 #VM_BASE_IMG='/home/vinkherbache/images/wheezy-x64-base.qcow2'
 #VM_BASE_IMG='/home/vinkherbache/images/debian.img'
 #VM_BASE_IMG='/home/vinkherbache/images/ubuntu_desktop.img'
