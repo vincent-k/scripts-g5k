@@ -10,10 +10,28 @@ if [ -n "$BACKING_DIR" ]; then
 fi
 
 
-function define_hosting_nodes {
+function remove_bad_nodes {
 
-	head -$(( `cat $NODES_OK | wc -l` / 2 )) $NODES_OK > $HOSTING_NODES
-	tail -$(( `cat $NODES_OK | wc -l` / 2 )) $NODES_OK > $IDLE_NODES
+	for NODE in `cat $HOSTING_NODES`; do
+		if [ $(cat $NODES_OK | grep $NODE | wc -l) -eq 0 ]; then
+			sed -i "/$NODE/d" $HOSTING_NODES
+		fi
+	done
+
+	for NODE in `cat $IDLE_NODES`; do
+		if [ $(cat $NODES_OK | grep $NODE | wc -l) -eq 0 ]; then
+			sed -i "/$NODE/d" $IDLE_NODES
+		fi
+	done
+
+	HOSTING_NB=$(cat $HOSTING_NODES | wc -l)
+	IDLE_NB=$(cat $IDLE_NODES | wc -l)
+
+	if [ $HOSTING_NB -gt $IDLE_NB ]; then
+		sed -i "1,$(($HOSTING_NB-$IDLE_NB))d" $HOSTING_NB
+	elif [ $IDLE_NB -gt $HOSTING_NB ]; then
+		sed -i "1,$(($IDLE_NB-$HOSTING_NB))d" $IDLE_NB
+	fi
 }
 
 function send_to_ctl {
@@ -208,7 +226,7 @@ function start_expe {
 
 ## MAIN
 
-define_hosting_nodes
+remove_bad_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
 if [ ! -n "$SHARED_STORAGE" ]; then duplicate_imgs_in_nodes $HOSTING_NODES ; fi
 if [ -n "$VM_BACKING_IMG_DIR" ]; then create_backing_imgs_in_nodes $HOSTING_NODES ; fi
