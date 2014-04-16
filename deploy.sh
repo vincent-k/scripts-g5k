@@ -21,16 +21,7 @@ function create_output_files {
 		mkdir $OUTPUT_DIR
 	fi
 
-	# Define the CTL node
-	cat $OAR_NODE_FILE | uniq | grep $CTL_NODE_CLUSTER | head -1  > $CTL_NODE
-	cat $OAR_NODE_FILE | uniq | grep $CLUSTER  > $NODES_LIST
-	sed -i '/'$(cat $CTL_NODE)'/d' $NODES_LIST
-
-	# Define the first node as NFS server
-	if [ -n "$NFS_SRV" ]; then
-	        head -1 $NODES_LIST > $NFS_SRV
-	        echo -e "$(tail -$(( `cat $NODES_LIST | wc -l` - 1 )) $NODES_LIST)" > $NODES_LIST
-	fi
+	identify_nodes
 
 	echo -e "################# LIST OF RESERVED NODES #################"
 	echo -ne "CTL : "
@@ -52,11 +43,73 @@ function create_output_files {
 	echo -e "##########################################################\n"
 
 	# Create/clean the other files
-	echo > "$NODES_OK"
-	echo > "$HOSTING_NODES"
-	echo > "$VMS_IPS"
-	echo > "$IPS_NAMES"
+	echo -n > "$NODES_OK"
+	echo -n > "$VMS_IPS"
+	echo -n > "$IPS_NAMES"
 }
+
+function identify_nodes {
+
+	# Define the CTL node
+	cat $OAR_NODE_FILE | uniq | grep $CTL_NODE_CLUSTER | head -1  > $CTL_NODE
+	cat $OAR_NODE_FILE | uniq | grep $CLUSTER  > $NODES_LIST
+	sed -i '/'$(cat $CTL_NODE)'/d' $NODES_LIST
+
+	# Clean other files
+	echo -n > "$HOSTING_NODES"
+	echo -n > "$IDLE_NODES"
+
+	# Define the hosting and idle nodes + NFS server
+	if [ -n "$NFS_SRV" ]; then
+		if [ -n $SWITCH -a $SWITCH -eq 2 ]; then
+		
+			NB_RACK=4
+			SRV_PER_RACK=18
+
+			FILE_DEST="$HOSTING_NODES"
+			for rack in $(seq $NB_RACK); do
+				COUNT=0
+				for node in `cat $NODES_LIST`; do
+					num=$(echo -e "$node" | cut -d'-' -f 2 | cut -d'.' -f 1)
+					if [ $(($num/($SRV_PER_RACK*$rack))) -eq $(($rack-1)) ] || [ $(($num/($SRV_PER_RACK*$rack))) -eq $rack -a $(($num%($SRV_PER_RACK*$rack))) -eq $(($rack-1)) ]; then
+						COUNT=$(($COUNT+1))
+						echo -e "$node" >> $FILE_DEST
+					fi
+				done
+				if [ $COUNT -gt 0 ]; then
+					echo -e "$COUNT nodes from rack $rack\n"
+					if [ ! -n $FIRST ]; then
+						FIRST=$COUNT
+						FILE_DEST="$IDLE_NODES"
+					else
+						if [ $COUNT -gt $FIRST ]; then
+							head -1 $IDLE_NODES > $NFS_SRV
+							sed -i "/$(cat $NFS_SRV)/d" $IDLE_NODES
+							sed -i "/$(cat $NFS_SRV)/d" $NODES_LIST
+						else
+							head -1 $HOSTING_NODES > $NFS_SRV
+							sed -i "/$(cat $NFS_SRV)/d" $HOSTING_NODES
+							sed -i "/$(cat $NFS_SRV)/d" $NODES_LIST
+						fi
+					fi
+				fi
+			done
+		else
+			# Define the NFS Server
+		        head -1 $NODES_LIST > $NFS_SRV
+			sed -i "/$(cat $NFS_SRV)/d" $NODES_LIST
+
+			# Define hosting and idle nodes
+			head -$(( `cat $NODES_LIST | wc -l` / 2 )) $NODES_LIST > $HOSTING_NODES
+			tail -$(( `cat $NODES_LIST | wc -l` / 2 )) $NODES_LIST > $IDLE_NODES
+		fi
+	else
+		# Define hosting and idle nodes
+		head -$(( `cat $NODES_LIST | wc -l` / 2 )) $NODES_LIST > $HOSTING_NODES
+		tail -$(( `cat $NODES_LIST | wc -l` / 2 )) $NODES_LIST > $IDLE_NODES
+	fi
+}
+
 
 function deploy_ctl {
 
@@ -81,9 +134,9 @@ function deploy_ctl {
 			#oardel $OAR_JOB_ID
 
 			# Cancel the storage reservation if exist
-			if [ -n "$SHARED_STORAGE" ]; then
-				oardel $SHARED_STORAGE
-			fi
+			#if [ -n "$SHARED_STORAGE" ]; then
+			#	oardel $SHARED_STORAGE
+			#fi
 			exit
 		fi
 	fi
@@ -135,12 +188,6 @@ function deploy_nodes {
 	echo -e "##########################################################\n"
 
 	echo -ne "Waiting for nodes networking configuration.." && sleep 60 && echo -e "\n"
-}
-
-function define_hosting_nodes {
-
-	head -$(( `cat $NODES_OK | wc -l` / 2 )) $NODES_OK > $HOSTING_NODES
-	tail -$(( `cat $NODES_OK | wc -l` / 2 )) $NODES_OK > $IDLE_NODES
 }
 
 function send_to_ctl {
