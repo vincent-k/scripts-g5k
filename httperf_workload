@@ -21,40 +21,42 @@ function stop {
 	fi
 
 	# Get start and stop times
-	if [ -e $APACHE_LOGFILE.1 ]; then
-		START_TIME=`head -1 $APACHE_LOGFILE.1 | cut -d' ' -f1`
-	else
-		START_TIME=`head -1 $APACHE_LOGFILE | cut -d' ' -f1`
-	fi
-	if [ -s $APACHE_LOGFILE ]; then
-		END_TIME=`tail -1 $APACHE_LOGFILE | cut -d' ' -f1`
-	else
-		if [ -e $APACHE_LOGFILE.1 ]; then
-			END_TIME=`tail -1 $APACHE_LOGFILE.1 | cut -d' ' -f1`
-		else
-			END_TIME=`tail -1 $APACHE_LOGFILE | cut -d' ' -f1`
-		fi
-	fi
+#	if [ -e $APACHE_LOGFILE.1 ]; then
+#		START_TIME=`head -1 $APACHE_LOGFILE.1 | cut -d' ' -f1`
+#	else
+#		START_TIME=`head -1 $APACHE_LOGFILE | cut -d' ' -f1`
+#	fi
+#	if [ -s $APACHE_LOGFILE ]; then
+#		END_TIME=`tail -1 $APACHE_LOGFILE | cut -d' ' -f1`
+#	else
+#		if [ -e $APACHE_LOGFILE.1 ]; then
+#			END_TIME=`tail -1 $APACHE_LOGFILE.1 | cut -d' ' -f1`
+#		else
+#			END_TIME=`tail -1 $APACHE_LOGFILE | cut -d' ' -f1`
+#		fi
+#	fi
 
-	TIME="$START_TIME"
+#	TIME="$START_TIME"
 
 	# Clean results file
-	echo -n > /tmp/results
+#	echo -n > /tmp/results
 
 	# Get the requests rate per second
-	while [ $TIME -le $END_TIME ]; do
-		if [ -e $APACHE_LOGFILE.1 ]; then
-			echo -e "$TIME,$(cat $APACHE_LOGFILE $APACHE_LOGFILE.1 | grep $TIME | wc -l)" >> /tmp/results
-		else
-			echo -e "$TIME,$(cat $APACHE_LOGFILE | grep $TIME | wc -l)" >> /tmp/results
-		fi
-		TIME=$(($TIME + 1))
-	done
+#	while [ $TIME -le $END_TIME ]; do
+#		if [ -e $APACHE_LOGFILE.1 ]; then
+#			echo -e "$TIME,$(cat $APACHE_LOGFILE $APACHE_LOGFILE.1 | grep $TIME | wc -l)" >> /tmp/results
+#		else
+#			echo -e "$TIME,$(cat $APACHE_LOGFILE | grep $TIME | wc -l)" >> /tmp/results
+#		fi
+#		TIME=$(($TIME + 1))
+#	done
 
 	# Send results to the remote host
 	#sync
 	scp $SSH_OPTS /tmp/stats $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE.stats >/dev/null
-	scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
+#	scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
+
+	echo -n > $APACHE_LOGFILE
 
 	exit 0
 }
