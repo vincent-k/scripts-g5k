@@ -223,14 +223,15 @@ function get_files_back {
 
 	tar czf $RESULTS_DIR.tgz $RESULTS_DIR && sync
 	scp $RESULTS_DIR.tgz $REMOTE_USER@$REMOTE_IP:~$REMOTE_USER/ > /dev/null
+	rm -rf $RESULTS_DIR.tgz
 }
 
 
 ## MAIN
 
 RESULTS_DIR="decommissioning_results"
-VIRSH_OPTS=" --live --p2p --timeout 60 "
-#VIRSH_OPTS=" --live "
+#VIRSH_OPTS=" --live --p2p --timeout 60 "
+VIRSH_OPTS=" --live "
 #VIRSH_OPTS=" --live --copy-storage-inc "
 
 rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"
@@ -249,9 +250,13 @@ PIDS=""
 echo -e "\nStarting workload in $(cat $VMS_IPS | wc -l) VMs..\n"
 mkdir $RESULTS_DIR/workload
 for IP in `cat $VMS_IPS`; do
+	# APACHE BENCHMARK
 	#./start_workload_in_vm ./apache_workload "10000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
+
+	# HTTPERF
 	# 60000 req, 100 req/s, timeout 0.4ms (walltime: 10 min)
 	./start_workload_in_vm ./httperf_workload "60000 100 0.0004" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
+
 	PIDS+="$!\n"
 done
 #start_workload_in_vms ./apache_workload "100000000 30" $RESULTS_DIR/workload $VMS_IPS &
