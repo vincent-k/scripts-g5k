@@ -254,8 +254,15 @@ for IP in `cat $VMS_IPS`; do
 	#./start_workload_in_vm ./apache_workload "10000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 
 	# HTTPERF
-	# 60000 req, 100 req/s, timeout 0.4ms (walltime: 10 min)
-	./start_workload_in_vm ./httperf_workload "60000 100 0.0004" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
+	NUM=$(echo -e "$IP" | cut -d'.' -f 4)
+	if [ $(($NUM%2)) -eq 1 ]; then
+		# 180000 req, 100 req/s, timeout 0.5ms (walltime: 30 min, 1req/10ms)
+		PARAMETERS="180000 100 0.0005"
+	else	
+		# 360000 req, 200 req/s, timeout 0.5ms (walltime: 30 min, 1req/5ms)
+		PARAMETERS="360000 200 0.0005"
+	fi
+	./start_workload_in_vm ./httperf_workload "$PARAMETERS" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 
 	PIDS+="$!\n"
 done
@@ -279,7 +286,7 @@ for P in `echo -e $PIDS`; do wait $P; done
 # Stop energy collect and workloads
 kill -TERM $COLLECT_ENERGY_TASK
 
-# Get workload stats manually
+# Get apache stats manually
 #./get_workload_stats $VM_BACKING_IMG_DIR $RESULTS_DIR/workload_img
 
 sleep 5
