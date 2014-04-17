@@ -26,10 +26,9 @@ function wait_for_boot {
 
 
 if [ -n "$NODE" ]; then
-
-	START=$(date +%s)
-
 	if [ -f "$NODE" ]; then
+		echo -ne "Powering on $(cat $NODE | wc -l) nodes.."
+
 		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
 			# Using IPMI
 			for N in `cat $NODE`; do
@@ -41,16 +40,18 @@ if [ -n "$NODE" ]; then
 		fi
 
 		# Wait for boot of all nodes
+		START=$(date +%s)
 		for N in `cat $NODE`; do
 			wait_for_boot $N &
 		done
 		wait
-
 		END=$(date +%s)
 
-		echo -e "$(cat $NODE|wc -l) nodes started. (total boot time = $(($END - $START)))s"
+		echo -e ".DONE (total boot time = $(($END - $START)))s"
 		
 	else
+		echo -ne "Powering on node '$NODE' .."
+
 		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
 			# Using IPMI
 			ipmitool -H $(host $(echo "$NODE" | cut -d'.' -f1)-bmc.$(echo "$NODE" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null
@@ -60,10 +61,10 @@ if [ -n "$NODE" ]; then
 		fi
 
 		# Wait for boot
+		START=$(date +%s)
 		wait_for_boot $NODE
-
 		END=$(date +%s)
 
-		echo -e "Node '$NODE' started. (boot time = $(($END - $START)))s"
+		echo -e ". DONE (boot time = $(($END - $START)))s"
 	fi
 fi
