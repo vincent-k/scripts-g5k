@@ -53,7 +53,7 @@ function stop {
 
 	# Send results to the remote host
 	#sync
-	scp $SSH_OPTS /tmp/stats $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE.stats >/dev/null
+	scp $SSH_OPTS /tmp/stats $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
 #	scp $SSH_OPTS /tmp/results $REMOTE_USER@$REMOTE_IP:~/$REMOTE_OUTPUT_FILE >/dev/null
 
 	echo -n > $APACHE_LOGFILE
