@@ -28,9 +28,9 @@ function remove_bad_nodes {
 	IDLE_NB=$(cat $IDLE_NODES | wc -l)
 
 	if [ $HOSTING_NB -gt $IDLE_NB ]; then
-		sed -i "1,$(($HOSTING_NB-$IDLE_NB))d" $HOSTING_NB
+		sed -i "1,$(($HOSTING_NB-$IDLE_NB))d" $HOSTING_NODES
 	elif [ $IDLE_NB -gt $HOSTING_NB ]; then
-		sed -i "1,$(($IDLE_NB-$HOSTING_NB))d" $IDLE_NB
+		sed -i "1,$(($IDLE_NB-$HOSTING_NB))d" $IDLE_NODES
 	fi
 }
 
@@ -216,6 +216,7 @@ function start_expe {
 	send_to_ctl ./get_workload_stats
 	send_to_ctl ./handbrake_workload
 	send_to_ctl ./apache_workload
+	send_to_ctl ./httperf_workload
 	
 	# Send and start experimentation script to the CTL node
 	echo -e "Send and execute experimentation script to the CTL :\n"
