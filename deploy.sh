@@ -62,35 +62,36 @@ function identify_nodes {
 	# Define the hosting and idle nodes + NFS server
 	if [ -n "$NFS_SRV" ]; then
 		if [ -n $SWITCH -a $SWITCH -eq 2 ]; then
-		
 			NB_RACK=4
 			SRV_PER_RACK=18
 
 			FILE_DEST="$HOSTING_NODES"
+			FIRST=0
 			for rack in $(seq $NB_RACK); do
 				COUNT=0
 				for node in `cat $NODES_LIST`; do
 					num=$(echo -e "$node" | cut -d'-' -f 2 | cut -d'.' -f 1)
-					if [ $(($num/($SRV_PER_RACK*$rack))) -eq $(($rack-1)) ] || [ $(($num/($SRV_PER_RACK*$rack))) -eq $rack -a $(($num%($SRV_PER_RACK*$rack))) -eq $(($rack-1)) ]; then
+					if [ $(($num/$SRV_PER_RACK)) -eq $(($rack-1)) -a $(($num%$SRV_PER_RACK)) -gt 0 ] || [ $(($num/$SRV_PER_RACK)) -eq $rack -a $(($num%$SRV_PER_RACK)) -eq 0 ]; then
 						COUNT=$(($COUNT+1))
 						echo -e "$node" >> $FILE_DEST
 					fi
 				done
 				if [ $COUNT -gt 0 ]; then
 					echo -e "$COUNT nodes from rack $rack\n"
-					if [ ! -n $FIRST ]; then
+					if [ $FIRST -eq 0 ]; then
 						FIRST=$COUNT
 						FILE_DEST="$IDLE_NODES"
+						continue
 					else
 						if [ $COUNT -gt $FIRST ]; then
 							head -1 $IDLE_NODES > $NFS_SRV
 							sed -i "/$(cat $NFS_SRV)/d" $IDLE_NODES
-							sed -i "/$(cat $NFS_SRV)/d" $NODES_LIST
 						else
 							head -1 $HOSTING_NODES > $NFS_SRV
 							sed -i "/$(cat $NFS_SRV)/d" $HOSTING_NODES
-							sed -i "/$(cat $NFS_SRV)/d" $NODES_LIST
 						fi
+						sed -i "/$(cat $NFS_SRV)/d" $NODES_LIST
+						break
 					fi
 				fi
 			done
