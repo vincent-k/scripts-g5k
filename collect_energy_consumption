@@ -2,44 +2,55 @@
 
 # Get parameters
 NODE="$1"
-BMC_USER="$2"
-BMC_MDP="$3"
-LOG_DIR="$4"
+RESULTS_DIR="$2"
 
-function get_power_consumption {
-	
-	local NODE="$1"
-	local LOG_DIR="$2"
+SCRIPT="collect_local_energy_consumption"
+LOCAL_USER=$(whoami)
+LOCAL_IP=$(ip a | grep inet | grep ' eth0' | awk '{print $2;}' | cut -d'/' -f1)
 
-	if [ -n "$LOG_DIR" ]; then
-		echo -e "`date +%s`\t`ipmitool -H $(host $(echo $NODE | cut -d'.' -f1)-bmc.$(echo $NODE | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP sdr get Power | grep Reading | cut -d':' -f 2 | awk '{print $1;}'`" >> $LOG_DIR/$NODE
-	else	
-		echo -e "$NODE:\t`ipmitool -H $(host $(echo $NODE | cut -d'.' -f1)-bmc.$(echo $NODE | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP sdr get Power | grep Reading | cut -d':' -f 2 | awk '{print $1;}'` Watt"
+# Set ssh parameters
+SSH_USER="root"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+function stop {
+	if [ -f "$NODE" ]; then
+		for N in `cat $NODE`; do
+			PID=$(echo -e `ssh $SSH_OPTS $SSH_USER@$N "ps aux | grep $SCRIPT | grep -v grep | head -1"` | awk '{print $2;}')
+			ssh $SSH_OPTS $SSH_USER@$N "kill -TERM $PID" >/dev/null &
+		done
+	else
+		PID=$(echo -e `ssh $SSH_OPTS $SSH_USER@$NODE "ps aux | grep $SCRIPT | grep -v grep | head -1"` | awk '{print $2;}')
+		ssh $SSH_OPTS $SSH_USER@$NODE "kill -TERM $PID" >/dev/null
 	fi
 }
+trap stop SIGTERM SIGINT SIGKILL
 
-# Catch termination sigs
-trap "echo -e 'Stopping energy consumption collect' && exit 0" SIGINT SIGTERM SIGKILL
-
-# Create output dir if it doesn't exist
-if [ -n "$LOG_DIR" -a ! -d "$LOG_DIR" ]; then
-	mkdir $LOG_DIR
+# Send script to NODE(s)
+if [ -f "$NODE" ]; then
+	for N in `cat $NODE`; do
+		scp $SSH_OPTS ./$SCRIPT $SSH_USER@$N: >/dev/null
+	done
+else
+	scp $SSH_OPTS ./$SCRIPT $SSH_USER@$NODE: >/dev/null
 fi
 
-# Get energy consumption (every second) of all nodes
-while [ true ]; do
+# Start the remote task in background
+if [ -f "$NODE" ]; then
+	for N in `cat $NODE`; do
+		ssh $SSH_OPTS $SSH_USER@$N "nohup ~$SSH_USER/$SCRIPT $LOCAL_USER $LOCAL_IP $RESULTS_DIR/$N >/dev/null 2>&1 &"
+	done
+else
+	ssh $SSH_OPTS $SSH_USER@$NODE "nohup ~$SSH_USER/$SCRIPT $LOCAL_USER $LOCAL_IP $RESULTS_DIR/$NODE >/dev/null 2>&1 &"
+fi
 
-	if [ -n "$NODE" ]; then
-		if [ -f "$NODE" ]; then
-			for N in `cat $NODE`; do
-				get_power_consumption $N $LOG_DIR &
-			done
-		else
-			get_power_consumption $NODE $LOG_DIR &
-		fi
-		wait
-	else
-		exit 0
-	fi
-	sleep 1
-done
+# Wait for the results (end of workload)
+if [ -f "$NODE" ]; then
+	while [ $(ls -1 ~/$RESULTS_DIR/ | wc -l) -lt $(cat $NODE | wc -l) ]; do
+		sleep 2
+	done
+else
+	while [ ! -f "~/$RESULTS_DIR/$NODE" ]; do
+		sleep 2
+	done
+fi
+echo -e "Stopped energy consumption collect"

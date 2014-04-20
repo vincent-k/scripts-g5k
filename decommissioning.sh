@@ -256,11 +256,11 @@ for IP in `cat $VMS_IPS`; do
 	# HTTPERF
 	NUM=$(echo -e "$IP" | cut -d'.' -f 4)
 	if [ $(($NUM%2)) -eq 1 ]; then
-		# 180000 req, 100 req/s, timeout 0.5ms (walltime: 30 min, 1req/10ms)
-		PARAMETERS="180000 100 0.0005"
+		# 360000 req, 100 req/s, timeout 0.5ms (walltime: 60 min, 1req/10ms)
+		PARAMETERS="360000 100 0.0005"
 	else	
-		# 360000 req, 200 req/s, timeout 0.5ms (walltime: 30 min, 1req/5ms)
-		PARAMETERS="360000 200 0.0005"
+		# 720000 req, 200 req/s, timeout 0.5ms (walltime: 60 min, 1req/5ms)
+		PARAMETERS="720000 200 0.0005"
 	fi
 	./start_workload_in_vm ./httperf_workload "$PARAMETERS" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 
