@@ -241,7 +241,8 @@ power_off_node $IDLE_NODES
 sleep 5
 
 # Start collecting energy consumption
-./collect_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
+#./collect_remote_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
+./collect_energy_consumption $NODES_OK $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
 sleep 5
 
