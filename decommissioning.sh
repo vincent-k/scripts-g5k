@@ -24,7 +24,7 @@ function power_on_node {
 		echo -e "START\t$START\nSTOP\t$STOP" > $LOG_DIR/boot
 	fi
 
-	sleep 5
+	sleep 2
 }
 
 function power_off_node {
@@ -47,6 +47,8 @@ function migrate {
 	local VM_NAME="$1"
 	local NODE_SRC="$2"
 	local NODE_DEST="$3"
+
+	sleep 2
 
 	if [ -n "$VM_BACKING_IMG_DIR" ]; then
 		local SRC_IMG="$VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME"
