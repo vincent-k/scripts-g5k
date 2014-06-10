@@ -33,32 +33,19 @@ function deploy_nodes {
 
 	# Add the NFS server node
 	if [ -n "$SHARED_STORAGE" -a -n "$NFS_SRV" ]; then
-		NB_NODES=$(($NB_NODES + 1))
-	fi
-
-	
-	if [ -n $SWITCH -a $SWITCH -eq 1 ]; then
-	
-		if [ -n "$RESERVATION" ]; then
-			SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=1/nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+		if [ -n $SWITCH ]; then
+			if [ -n "$RESERVATION" ]; then
+				SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=$SWITCH/nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+			else
+				SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=$SWITCH/nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+			fi
 		else
-			SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=1/nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+			if [ -n "$RESERVATION" ]; then
+				SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+			else
+				SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
+			fi	
 		fi
-	
-
-	elif [ -n $SWITCH -a $SWITCH -eq 2 ]; then
-
-		if [ -n "$RESERVATION" ]; then
-			SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=1/nodes=$((($NB_NODES/2)+($NB_NODES%2)))+{"cluster='$CLUSTER'"}/switch=1/nodes=$(($NB_NODES/2)),walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
-		else
-			SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=1/nodes=$((($NB_NODES/2)+($NB_NODES%2)))+{"cluster='$CLUSTER'"}/switch=1/nodes=$(($NB_NODES/2)),walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
-		fi
-	else
-		if [ -n "$RESERVATION" ]; then
-			SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
-		else
-			SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=$NB_NODES,walltime=$TIME -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
-		fi	
 	fi
 
 	# Get the JOB_ID of reservation
