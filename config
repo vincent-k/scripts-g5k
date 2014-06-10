@@ -28,6 +28,7 @@ NODES_LIST="$OUTPUT_DIR/nodes_list"
 NODES_OK="$OUTPUT_DIR/nodes_ok"
 HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
 IDLE_NODES="$OUTPUT_DIR/idle_nodes"
+POWER_NODES="$OUTPUT_DIR/power_nodes"
 
 # BMC
 BMC_USER='admin'
