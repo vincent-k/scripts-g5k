@@ -89,6 +89,65 @@ function migrate {
 	fi
 }
 
+function migrate_node_par_1_by_1 {
+
+	local NODE_SRC="$1"
+	local NODE_DEST="$2"
+	local MIGRATE_DIR="$3"
+	local PID=""
+
+	# Boot the new node and get boot time
+	#power_on_node $NODE_DEST $MIGRATE_DIR
+
+	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+
+		# Start workload in VM just before migrate it
+		IP=$(cat $IPS_NAMES | grep "^$VM" | tail -1 | awk '{print $2;}')
+		PARAMETERS="1200000 200 0.0005"
+		./start_workload_in_vm ./httperf_workload "$PARAMETERS" decommissioning_results/workload $IP $VM &
+
+		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
+		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM
+	done
+	
+	# Shutdown the old node and get halt time
+	power_off_node $NODE_SRC $MIGRATE_DIR
+}
+
+function migrate_node_par_2_by_2 {
+
+	local NODE_SRC="$1"
+	local NODE_DEST="$2"
+	local MIGRATE_DIR="$3"
+	local PIDS=""
+
+	# Boot the new node and get boot time
+	#power_on_node $NODE_DEST $MIGRATE_DIR
+
+	NUM=1
+	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+
+		# Start workload in VM just before migrate it
+		IP=$(cat $IPS_NAMES | grep "^$VM" | tail -1 | awk '{print $2;}')
+		PARAMETERS="1200000 200 0.0005"
+		./start_workload_in_vm ./httperf_workload "$PARAMETERS" decommissioning_results/workload $IP $VM &
+
+		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
+		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM &
+		PIDS+="$!\n"
+
+		if [ $(($NUM%2)) -eq 0 ]; then
+			for P in `echo -e $PIDS`; do wait $P; done
+			PIDS=""
+		fi
+
+		NUM=$(($NUM+1))
+	done
+	
+	# Shutdown the old node and get halt time
+	power_off_node $NODE_SRC $MIGRATE_DIR
+}
+
 function migrate_node_par {
 
 	local NODE_SRC="$1"
@@ -97,9 +156,14 @@ function migrate_node_par {
 	local PIDS=""
 
 	# Boot the new node and get boot time
-	power_on_node $NODE_DEST $MIGRATE_DIR
+	#power_on_node $NODE_DEST $MIGRATE_DIR
 
 	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+		# Start workload in VM just before migrate it
+		IP=$(cat $IPS_NAMES | grep "^$VM" | tail -1 | awk '{print $2;}')
+		PARAMETERS="1200000 200 0.0005"
+		./start_workload_in_vm ./httperf_workload "$PARAMETERS" decommissioning_results/workload $IP $VM &
+
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
 		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM &
 		PIDS+="$!\n"
