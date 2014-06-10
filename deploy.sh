@@ -138,7 +138,7 @@ function deploy_ctl {
 			#if [ -n "$SHARED_STORAGE" ]; then
 			#	oardel $SHARED_STORAGE
 			#fi
-			exit
+			end
 		fi
 	fi
 }
@@ -169,7 +169,7 @@ function deploy_nfs_server {
 			if [ -n "$SHARED_STORAGE" ]; then
 				oardel $SHARED_STORAGE
 			fi
-			exit
+			end
 		fi
 	fi
 }
@@ -313,6 +313,11 @@ function mount_nfs_storage {
 	echo -e "##########################################################\n"
 }
 
+function end {
+	# Wait the end of walltime
+	while [ true ]; do sleep 60 ; done
+}
+
 
 ## MAIN
 
@@ -332,7 +337,4 @@ if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then configure_bmc_in_nodes ; fi
 ./prepare.sh $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR
 
 echo -e "\nALL FINISHED !"
-
-# Wait the end of walltime
-while [ true ]; do sleep 60 ; done
-
+end
