@@ -542,7 +542,7 @@ function get_files_back {
 
 RESULTS_DIR="decommissioning_results"
 #VIRSH_OPTS=" --live --p2p --timeout 60 "
-VIRSH_OPTS=" --live "
+VIRSH_OPTS=" --live --timeout 600 "
 #VIRSH_OPTS=" --live --copy-storage-inc "
 
 rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"
