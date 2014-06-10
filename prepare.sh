@@ -212,6 +212,8 @@ function start_expe {
 	send_to_ctl ./create_backing_img
 	send_to_ctl ./migrate_vm
 	send_to_ctl ./collect_energy_consumption
+	send_to_ctl ./collect_remote_energy_consumption
+	send_to_ctl ./collect_local_energy_consumption
 	send_to_ctl ./start_workload_in_vm
 	send_to_ctl ./get_workload_stats
 	send_to_ctl ./handbrake_workload
@@ -224,10 +226,20 @@ function start_expe {
 	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS "~$SSH_USER/$SCRIPT $SCRIPT_OPTS"
 }
 
+function disable_nodes_cpus {
+	local NODES="$1"
+
+	for node in `cat $NODES`; do
+		ssh $SSH_USER@$node $SSH_OPTS 'bash -s' < disable_cpus 5 6 7 8
+	done
+}
 
 ## MAIN
 
-remove_bad_nodes
+
+# Disable half CPUs to hosting nodes
+#disable_nodes_cpus $HOSTING_NODES
+
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
 if [ ! -n "$SHARED_STORAGE" ]; then duplicate_imgs_in_nodes $HOSTING_NODES ; fi
 if [ -n "$VM_BACKING_IMG_DIR" ]; then create_backing_imgs_in_nodes $HOSTING_NODES ; fi

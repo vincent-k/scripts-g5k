@@ -32,7 +32,10 @@ if [ -n "$NODE" ]; then
 		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
 			# Using IPMI
 			for N in `cat $NODE`; do
-				ipmitool -H $(host $(echo "$N" | cut -d'.' -f1)-bmc.$(echo "$N" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null
+				echo "ERROR" > /tmp/error-$NODE
+				while [ $(cat /tmp/error-$NODE | wc -l) -gt 0 ]; do
+					ipmitool -H $(host $(echo "$N" | cut -d'.' -f1)-bmc.$(echo "$N" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null 2>/tmp/error-$NODE
+				done
 			done
 		else
 			# Using kapower
@@ -54,7 +57,10 @@ if [ -n "$NODE" ]; then
 
 		if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then
 			# Using IPMI
-			ipmitool -H $(host $(echo "$NODE" | cut -d'.' -f1)-bmc.$(echo "$NODE" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null
+			echo "ERROR" > /tmp/error-$NODE
+			while [ $(cat /tmp/error-$NODE | wc -l) -gt 0 ]; do
+				ipmitool -H $(host $(echo "$NODE" | cut -d'.' -f1)-bmc.$(echo "$NODE" | cut -d'.' -f2,3,4) | awk '{print $4;}') -I lan -U $BMC_USER -P $BMC_MDP chassis power on > /dev/null 2>/tmp/error-$NODE
+			done
 		else
 			# Using kapower
 			kapower3 --on -m $NODE >/dev/null
