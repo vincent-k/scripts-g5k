@@ -492,23 +492,6 @@ function decommissioning_seq-seq_2blades {
 	echo -e "###########################################################################\n"
 }
 
-function start_workload_in_vms {
-
-	local WORKLOAD_SCRIPT="$1"
-	local SCRIPT_OPTIONS="$2"
-	local RESULTS_DIR="$3"
-	local VMS="$4"
-	local PIDS=""
-	mkdir $RESULTS_DIR
-
-	echo -e "\nStarting workload in $(cat $VMS | wc -l) VMs..\n"
-	for IP in `cat $VMS`; do
-		./start_workload_in_vm $WORKLOAD_SCRIPT "$SCRIPT_OPTIONS" $RESULTS_DIR $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
-		PIDS+="$!\n"
-	done
-	for P in `echo -e $PIDS`; do wait $P; done
-}
-
 function get_files_back {
 
 	tar czf $RESULTS_DIR.tgz $RESULTS_DIR && sync
@@ -557,10 +540,6 @@ decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
 
 # Stop energy collect
 kill -TERM $COLLECT_ENERGY_TASK
-
-# Get apache stats manually
-#./get_workload_stats $VM_BACKING_IMG_DIR $RESULTS_DIR/workload_img
-
 sleep 5
 
 # Get results
