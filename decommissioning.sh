@@ -23,8 +23,6 @@ function power_on_node {
 		echo -e "$(($STOP - $START))" > $LOG_DIR/boot_time
 		echo -e "START\t$START\nSTOP\t$STOP" > $LOG_DIR/boot
 	fi
-
-	sleep 2
 }
 
 function power_off_node {
@@ -47,8 +45,6 @@ function migrate {
 	local VM_NAME="$1"
 	local NODE_SRC="$2"
 	local NODE_DEST="$3"
-
-	sleep 2
 
 	if [ -n "$VM_BACKING_IMG_DIR" ]; then
 		local SRC_IMG="$VM_BASE_IMG_DIR/$VM_BASE_IMG_NAME"
@@ -607,13 +603,6 @@ decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
 #decommissioning_seq-seq $RESULTS_DIR/decommissioning_seq-seq
 #decommissioning_par-seq $RESULTS_DIR/decommissioning_par-seq
 #decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
-sleep 1
-
-# Terminate workloads
-#for P in `echo -e $PIDS`; do kill -TERM $P; done
-
-# Wait end of workloads
-#for P in `echo -e $PIDS`; do wait $P; done
 
 # Stop energy collect
 kill -TERM $COLLECT_ENERGY_TASK
