@@ -99,8 +99,7 @@ function migrate_node_par_1_by_1 {
 
 		# Start workload in VM just before migrate it
 		IP=$(cat $IPS_NAMES | grep "^$VM" | tail -1 | awk '{print $2;}')
-		PARAMETERS="1200000 200 0.0005"
-		./start_workload_in_vm ./httperf_workload "$PARAMETERS" decommissioning_results/workload $IP $VM &
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$WORKLOAD_SETTINGS" decommissioning_results/workload $IP $VM &
 
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
 		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM
@@ -125,8 +124,7 @@ function migrate_node_par_2_by_2 {
 
 		# Start workload in VM just before migrate it
 		IP=$(cat $IPS_NAMES | grep "^$VM" | tail -1 | awk '{print $2;}')
-		PARAMETERS="1200000 200 0.0005"
-		./start_workload_in_vm ./httperf_workload "$PARAMETERS" decommissioning_results/workload $IP $VM &
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$WORKLOAD_SETTINGS" decommissioning_results/workload $IP $VM &
 
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
 		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM &
@@ -155,10 +153,10 @@ function migrate_node_par {
 	#power_on_node $NODE_DEST $MIGRATE_DIR
 
 	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+
 		# Start workload in VM just before migrate it
 		IP=$(cat $IPS_NAMES | grep "^$VM" | tail -1 | awk '{print $2;}')
-		PARAMETERS="1200000 200 0.0005"
-		./start_workload_in_vm ./httperf_workload "$PARAMETERS" decommissioning_results/workload $IP $VM &
+		./start_workload_in_vm $WORKLOAD_SCRIPT "$WORKLOAD_SETTINGS" decommissioning_results/workload $IP $VM &
 
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
 		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM &
@@ -534,14 +532,16 @@ function get_files_back {
 
 ## MAIN
 
+
 #HOSTING_NODES2="$OUTPUT_DIR/hosting_nodes2"
 
+# Set output dir
 RESULTS_DIR="decommissioning_results"
-#VIRSH_OPTS=" --live --p2p --timeout 60 "
-VIRSH_OPTS=" --live --timeout 600 "
-#VIRSH_OPTS=" --live --copy-storage-inc "
-
 rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"
+
+# Migrations options
+VIRSH_OPTS=" --live --timeout 600 "
+#VIRSH_OPTS=" --live --p2p --copy-storage-inc "
 
 # Power off destination nodes
 power_off_node $IDLE_NODES
@@ -549,48 +549,12 @@ sleep 5
 
 # Start collecting energy consumption
 cat $IDLE_NODES $HOSTING_NODES > $POWER_NODES
-#cat $IDLE_NODES $HOSTING_NODES $HOSTING_NODES2 > $POWER_NODES
-./collect_remote_energy_consumption $POWER_NODES $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
-#./collect_energy_consumption $POWER_NODES $RESULTS_DIR/consumption &
+./collect_energy_consumption $POWER_NODES $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
-sleep 1
 
-# Start workload in VMs
-PIDS=""
-echo -e "\nStarting workload in $(cat $VMS_IPS | wc -l) VMs..\n"
-mkdir $RESULTS_DIR/workload
-#for IP in `cat $VMS_IPS`; do
-	# APACHE BENCHMARK
-	#./start_workload_in_vm ./apache_workload "10000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
-
-	# HTTPERF
-	#NUM=$(echo -e "$IP" | cut -d'.' -f 4)
-	#if [ $(($NUM%2)) -eq 1 ]; then
-		# 360000 req, 100 req/s, timeout 0.5ms (walltime: 60 min, 1req/10ms)
-		#PARAMETERS="360000 100 0.0005"
-		PARAMETERS="600000 100 0.0005"
-	#else	
-		# 720000 req, 200 req/s, timeout 0.5ms (walltime: 60 min, 1req/5ms)
-		#PARAMETERS="720000 200 0.0005"
-		#PARAMETERS="900000 200 0.0005"
-		#15MIN
-		#PARAMETERS="180000 200 0.0005"
-		#5MIN
-		#PARAMETERS="60000 200 0.0005"
-		#10MIN
-		#PARAMETERS="120000 200 0.0005"
-		#20MIN
-		#PARAMETERS="240000 200 0.0005"
-		#5MIN
-		#PARAMETERS="150000 500 0.0005"
-	#fi
-#	./start_workload_in_vm ./httperf_workload "$PARAMETERS" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
-
-#	PIDS+="$!\n"
-#done
-#start_workload_in_vms ./apache_workload "100000000 30" $RESULTS_DIR/workload $VMS_IPS &
-#start_workload_in_vms ./httperf_workload "60000 100 0.004" $RESULTS_DIR/workload $VMS_IPS &
-#sleep 1
+# Workload settings
+WORKLOAD_SCRIPT="./httperf_workload"
+WORKLOAD_SETTINGS="1200000 200 0.0005"
 
 # Decommissioning
 decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
