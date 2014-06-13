@@ -171,19 +171,17 @@ function migrate_node_par {
 function migrate_node_seq {
 
 	local NODE_SRC="$1"
-        local NODE_DEST="$2"
+    local NODE_DEST="$2"
 	local MIGRATE_DIR="$3" && mkdir "$MIGRATE_DIR"
 	
 	# Boot the new node and get boot time
 	#power_on_node $NODE_DEST $MIGRATE_DIR
 
-        for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
-	
-		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
-
+    for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+	    echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
-                migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM
-        done
+        migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM
+    done
 
 	# Shutdown the old node and get halt time
 	power_off_node $NODE_SRC $MIGRATE_DIR
@@ -191,10 +189,10 @@ function migrate_node_seq {
 
 function decommissioning_par-par_half {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(($(cat $HOSTING_NODES | wc -l)/2))
@@ -240,10 +238,10 @@ function decommissioning_par-par_half {
 
 function decommissioning_par-par_2_by_2_half {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(($(cat $HOSTING_NODES | wc -l)/2))
@@ -289,10 +287,10 @@ function decommissioning_par-par_2_by_2_half {
 
 function decommissioning_par-par_1_by_1 {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
@@ -318,10 +316,10 @@ function decommissioning_par-par_1_by_1 {
 
 function decommissioning_par-par_2_by_2 {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
@@ -345,47 +343,37 @@ function decommissioning_par-par_2_by_2 {
 	echo -e "###########################################################################\n"
 }
 
-function tmp_boot {
-	local NODE_SRC="$1"
-	local NODE_SRC2="$2"
-	local NODE_DEST="$3"
-	local DECOMMISSIONING_DIR="$4"
-	mkdir "$DECOMMISSIONING_DIR/$NODE_DEST"
-	local PIDS=""
-	power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_DEST
-	migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
-	PIDS+="$!\n"
-	migrate_node_par $NODE_SRC2 $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC2 &
-	PIDS+="$!\n"
-	for P in `echo -e $PIDS`; do wait $P; done
-}
 function decommissioning_par-par_2blades {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
-	local HOSTING_NODES2="$OUTPUT_DIR/hosting_nodes2"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $IDLE_NODES | wc -l)
-	#for i in $(seq 1 $NB_MIGRATE_NODES); do
-	#	local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
-	#	mkdir "$DECOMMISSIONING_DIR/$NODE_DEST"
-	#	power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_DEST &
-	#	BPIDS+="$!\n"		
-	#done
-	#for P in `echo -e $BPIDS`; do wait $P; done
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_SRC2=$(cat $HOSTING_NODES2 | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
 
 		echo -e "Migrating VMs from '$NODE_SRC' and '$NODE_SRC2' to '$NODE_DEST' :"
-		tmp_boot $NODE_SRC $NODE_SRC2 $NODE_DEST $DECOMMISSIONING_DIR &
-		#migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC BOOT &
-		#PIDS+="$!\n"
-		#migrate_node_par $NODE_SRC2 $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC2 BOOT &
+
+        function tmp_boot {
+            local NODE_SRC="$1"
+            local NODE_SRC2="$2"
+            local NODE_DEST="$3"
+            local DECOMMISSIONING_DIR="$4"
+            mkdir "$DECOMMISSIONING_DIR/$NODE_DEST"
+            local PIDS=""
+            power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_DEST
+            migrate_node_par $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+            PIDS+="$!\n"
+            migrate_node_par $NODE_SRC2 $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC2 &
+            PIDS+="$!\n"
+            for P in `echo -e $PIDS`; do wait $P; done
+        }
+        tmp_boot $NODE_SRC $NODE_SRC2 $NODE_DEST $DECOMMISSIONING_DIR &
 		PIDS+="$!\n"
 	done
 	for P in `echo -e $PIDS`; do wait $P; done
@@ -394,10 +382,10 @@ function decommissioning_par-par_2blades {
 
 function decommissioning_par-par {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
@@ -423,10 +411,10 @@ function decommissioning_par-par {
 
 function decommissioning_par-seq {
 
-        local DECOMMISSIONING_DIR="$1"
+    local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
 	local BPIDS=""
-        mkdir "$DECOMMISSIONING_DIR"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############# DECOMMISSIONING : PARALLEL-SEQUENTIAL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
@@ -452,8 +440,8 @@ function decommissioning_par-seq {
 
 function decommissioning_seq-par {
 
-        local DECOMMISSIONING_DIR="$1"
-        mkdir "$DECOMMISSIONING_DIR"
+    local DECOMMISSIONING_DIR="$1"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############# DECOMMISSIONING : SEQUENTIAL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
@@ -469,8 +457,8 @@ function decommissioning_seq-par {
 
 function decommissioning_seq-seq {
 
-        local DECOMMISSIONING_DIR="$1"
-        mkdir "$DECOMMISSIONING_DIR"
+    local DECOMMISSIONING_DIR="$1"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############ DECOMMISSIONING : SEQUENTIAL-SEQUENTIAL MIGRATIONS ############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
@@ -486,9 +474,8 @@ function decommissioning_seq-seq {
 
 function decommissioning_seq-seq_2blades {
 
-        local DECOMMISSIONING_DIR="$1"
-        mkdir "$DECOMMISSIONING_DIR"
-	local HOSTING_NODES2="$OUTPUT_DIR/hosting_nodes2"
+    local DECOMMISSIONING_DIR="$1"
+    mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############ DECOMMISSIONING : SEQUENTIAL-SEQUENTIAL MIGRATIONS ############"
 	local NB_MIGRATE_NODES=$(cat $IDLE_NODES | wc -l)
