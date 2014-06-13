@@ -503,8 +503,6 @@ function get_files_back {
 ## MAIN
 
 
-#HOSTING_NODES2="$OUTPUT_DIR/hosting_nodes2"
-
 # Set output dir
 RESULTS_DIR="decommissioning_results"
 rm -rf "$RESULTS_DIR" && mkdir "$RESULTS_DIR"

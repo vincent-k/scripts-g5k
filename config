@@ -27,6 +27,7 @@ IMG_NODES='debian-sid-qemu'
 NODES_LIST="$OUTPUT_DIR/nodes_list"
 NODES_OK="$OUTPUT_DIR/nodes_ok"
 HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
+#HOSTING_NODES2="$OUTPUT_DIR/hosting_nodes2"
 IDLE_NODES="$OUTPUT_DIR/idle_nodes"
 POWER_NODES="$OUTPUT_DIR/power_nodes"
 
