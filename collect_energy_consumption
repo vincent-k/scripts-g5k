@@ -3,6 +3,7 @@
 # Get parameters
 NODE="$1"
 RESULTS_DIR="$2"
+mkdir -p "~/$RESULTS_DIR"
 
 SCRIPT="collect_local_energy_consumption"
 LOCAL_USER=$(whoami)
