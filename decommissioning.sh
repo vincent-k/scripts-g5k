@@ -24,7 +24,7 @@ function power_on_node {
 		echo -e "START\t$START\nSTOP\t$STOP" > $LOG_DIR/boot
 	fi
 
-	sleep 5
+	sleep 2
 }
 
 function power_off_node {
