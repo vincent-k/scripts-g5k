@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Get parameters
+NODE="$1"
+IMG="$2"
+VCPU="$3"
+MEM="$4"
+MAC="$5"
+
+# Set global parameters
+VM_NAME=`basename $IMG | cut -d. -f1`
+FORMAT="${IMG##*.}"
+if [ "$FORMAT" != "qcow2" ]; then FORMAT='raw'; fi
+SSH_USER='root'
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+# Start VM
+ssh $SSH_USER@$NODE $SSH_OPTS "virt-install --name $VM_NAME --ram $MEM --vcpus $VCPU --disk path=$IMG,format=$FORMAT,cache=none --network bridge:br0,mac=$MAC --nographics --virt-type kvm --noautoconsole --import >/dev/null"
+echo -e " $VM_NAME to node $NODE DONE"

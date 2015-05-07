@@ -1,0 +1,17 @@
+#!/bin/bash
+
+NODE="$1"
+VM="$2"
+SIZE="$3"
+
+SSH_USER="root"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
+
+if [ `echo "$VM" | grep vm | wc -l` -lt 1 ]; then	
+	VM=`ssh $SSH_USER@$NODE $SSH_OPTS "virsh list | grep vm | head -$VM | tail -1" | awk '{print $2;}'`
+fi
+
+ssh $SSH_USER@$NODE $SSH_OPTS "virsh destroy $VM && sleep 5"
+ssh $SSH_USER@$NODE $SSH_OPTS "virsh setmaxmem $VM $SIZE"
+ssh $SSH_USER@$NODE $SSH_OPTS "virsh start $VM && sleep 5"
+ssh $SSH_USER@$NODE $SSH_OPTS "virsh setmem $VM $SIZE"
