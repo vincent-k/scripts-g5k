@@ -87,15 +87,44 @@ function migrate {
 	fi
 }
 
+function migrate_node_par_2_by_2 {
+
+	local NODE_SRC="$1"
+	local NODE_DEST="$2"
+	local MIGRATE_DIR="$3"
+	local PIDS=""
+
+	# Boot the new node and get boot time
+	#power_on_node $NODE_DEST $MIGRATE_DIR
+
+	NUM=1
+	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
+
+		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
+		migrate $VM $NODE_SRC $NODE_DEST && echo "STOP $VM : $(date +%s)" | tee -a $MIGRATE_DIR/$VM &
+		PIDS+="$!\n"
+
+		if [ $(($NUM%2)) -eq 0 ]; then
+			for P in `echo -e $PIDS`; do wait $P; done
+			PIDS=""
+		fi
+
+		NUM=$(($NUM+1))
+	done
+	
+	# Shutdown the old node and get halt time
+	power_off_node $NODE_SRC $MIGRATE_DIR
+}
+
 function migrate_node_par {
 
 	local NODE_SRC="$1"
 	local NODE_DEST="$2"
-	local MIGRATE_DIR="$3" && mkdir "$MIGRATE_DIR"
+	local MIGRATE_DIR="$3"
 	local PIDS=""
 
 	# Boot the new node and get boot time
-	power_on_node $NODE_DEST $MIGRATE_DIR
+	#power_on_node $NODE_DEST $MIGRATE_DIR
 
 	for VM in `virsh --connect qemu+ssh://$SSH_USER@$NODE_SRC/system list | grep $VM_PREFIX | awk '{print $2;}'`; do
 		echo "START $VM : $(date +%s)" | tee $MIGRATE_DIR/$VM
@@ -129,14 +158,82 @@ function migrate_node_seq {
 	power_off_node $NODE_SRC $MIGRATE_DIR
 }
 
-function decommissioning_par-par {
+function decommissioning_par-par_2_by_2 {
 
         local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
+	local BPIDS=""
         mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
+	for i in $(seq 1 $NB_MIGRATE_NODES); do
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
+		mkdir "$DECOMMISSIONING_DIR/$NODE_SRC"
+		power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		BPIDS+="$!\n"		
+	done
+	for P in `echo -e $BPIDS`; do wait $P; done
+	for i in $(seq 1 $NB_MIGRATE_NODES); do
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
+
+		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		migrate_node_par_2_by_2 $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		PIDS+="$!\n"
+	done
+	for P in `echo -e $PIDS`; do wait $P; done
+	echo -e "###########################################################################\n"
+}
+
+function decommissioning_par-par_2_by_2_moitie {
+
+        local DECOMMISSIONING_DIR="$1"
+	local PIDS=""
+	local BPIDS=""
+        mkdir "$DECOMMISSIONING_DIR"
+
+	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
+	local NB_MIGRATE_NODES=$(($(cat $HOSTING_NODES | wc -l)))
+	for i in $(seq 1 $NB_MIGRATE_NODES); do
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
+		mkdir "$DECOMMISSIONING_DIR/$NODE_SRC"
+		power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		BPIDS+="$!\n"		
+	done
+	for P in `echo -e $BPIDS`; do wait $P; done
+	for i in $(seq 1 $NB_MIGRATE_NODES); do
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
+
+		echo -e "Migrating VMs from '$NODE_SRC' to '$NODE_DEST' :"
+		migrate_node_par_2_by_2 $NODE_SRC $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		PIDS+="$!\n"
+	done
+	for P in `echo -e $PIDS`; do wait $P; done
+	echo -e "###########################################################################\n"
+}
+
+
+function decommissioning_par-par {
+
+        local DECOMMISSIONING_DIR="$1"
+	local PIDS=""
+	local BPIDS=""
+        mkdir "$DECOMMISSIONING_DIR"
+
+	echo -e "############### DECOMMISSIONING : PARALLEL-PARALLEL MIGRATIONS #############"
+	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
+	for i in $(seq 1 $NB_MIGRATE_NODES); do
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
+		mkdir "$DECOMMISSIONING_DIR/$NODE_SRC"
+		power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		BPIDS+="$!\n"		
+	done
+	for P in `echo -e $BPIDS`; do wait $P; done
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
@@ -153,10 +250,19 @@ function decommissioning_par-seq {
 
         local DECOMMISSIONING_DIR="$1"
 	local PIDS=""
+	local BPIDS=""
         mkdir "$DECOMMISSIONING_DIR"
 
 	echo -e "############# DECOMMISSIONING : PARALLEL-SEQUENTIAL MIGRATIONS #############"
 	local NB_MIGRATE_NODES=$(cat $HOSTING_NODES | wc -l)
+	for i in $(seq 1 $NB_MIGRATE_NODES); do
+		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
+		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
+		mkdir "$DECOMMISSIONING_DIR/$NODE_SRC"
+		power_on_node $NODE_DEST $DECOMMISSIONING_DIR/$NODE_SRC &
+		BPIDS+="$!\n"
+	done
+	for P in `echo -e $BPIDS`; do wait $P; done
 	for i in $(seq 1 $NB_MIGRATE_NODES); do
 		local NODE_SRC=$(cat $HOSTING_NODES | head -$i | tail -1)
 		local NODE_DEST=$(cat $IDLE_NODES | head -$i | tail -1)
@@ -241,10 +347,11 @@ power_off_node $IDLE_NODES
 sleep 5
 
 # Start collecting energy consumption
-#./collect_remote_energy_consumption $NODES_OK $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
-./collect_energy_consumption $NODES_OK $RESULTS_DIR/consumption &
+cat $IDLE_NODES $HOSTING_NODES > $POWER_NODES
+./collect_remote_energy_consumption $POWER_NODES $BMC_USER $BMC_MDP $RESULTS_DIR/consumption &
+#./collect_energy_consumption $POWER_NODES $RESULTS_DIR/consumption &
 COLLECT_ENERGY_TASK=$!
-sleep 5
+sleep 1
 
 # Start workload in VMs
 PIDS=""
@@ -255,28 +362,39 @@ for IP in `cat $VMS_IPS`; do
 	#./start_workload_in_vm ./apache_workload "10000000 50" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 
 	# HTTPERF
-	NUM=$(echo -e "$IP" | cut -d'.' -f 4)
-	if [ $(($NUM%2)) -eq 1 ]; then
-		# 360000 req, 100 req/s, timeout 0.5ms (walltime: 60 min, 1req/10ms)
-		PARAMETERS="360000 100 0.0005"
-	else	
+#	NUM=$(echo -e "$IP" | cut -d'.' -f 4)
+#	if [ $(($NUM%2)) -eq 1 ]; then
+#		# 360000 req, 100 req/s, timeout 0.5ms (walltime: 60 min, 1req/10ms)
+#		PARAMETERS="360000 100 0.0005"
+#	else	
 		# 720000 req, 200 req/s, timeout 0.5ms (walltime: 60 min, 1req/5ms)
-		PARAMETERS="720000 200 0.0005"
-	fi
+		#PARAMETERS="720000 200 0.0005"
+		#15MIN
+		#PARAMETERS="180000 200 0.0005"
+		#5MIN
+		#PARAMETERS="60000 200 0.0005"
+		#10MIN
+		PARAMETERS="120000 200 0.0005"
+		#20MIN
+		#PARAMETERS="240000 200 0.0005"
+		#5MIN
+		#PARAMETERS="150000 500 0.0005"
+#	fi
 	./start_workload_in_vm ./httperf_workload "$PARAMETERS" $RESULTS_DIR/workload $IP $(cat $IPS_NAMES | grep "$IP$" | tail -1 | cut -f 1) &
 
 	PIDS+="$!\n"
 done
 #start_workload_in_vms ./apache_workload "100000000 30" $RESULTS_DIR/workload $VMS_IPS &
 #start_workload_in_vms ./httperf_workload "60000 100 0.004" $RESULTS_DIR/workload $VMS_IPS &
-sleep 5
+sleep 1
 
 # Decommissioning
 #decommissioning_par-par $RESULTS_DIR/decommissioning_par-par
+decommissioning_par-par_2_by_2 $RESULTS_DIR/decommissioning_par-par_2_by_2
 #decommissioning_seq-seq $RESULTS_DIR/decommissioning_seq-seq
 #decommissioning_par-seq $RESULTS_DIR/decommissioning_par-seq
-decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
-sleep 5
+#decommissioning_seq-par $RESULTS_DIR/decommissioning_seq-par
+sleep 1
 
 # Terminate workloads
 #for P in `echo -e $PIDS`; do kill -TERM $P; done
@@ -284,7 +402,7 @@ sleep 5
 # Wait end of workloads
 for P in `echo -e $PIDS`; do wait $P; done
 
-# Stop energy collect and workloads
+# Stop energy collect
 kill -TERM $COLLECT_ENERGY_TASK
 
 # Get apache stats manually
