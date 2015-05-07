@@ -212,6 +212,8 @@ function start_expe {
 	send_to_ctl ./create_backing_img
 	send_to_ctl ./migrate_vm
 	send_to_ctl ./collect_energy_consumption
+	send_to_ctl ./collect_remote_energy_consumption
+	send_to_ctl ./collect_local_energy_consumption
 	send_to_ctl ./start_workload_in_vm
 	send_to_ctl ./get_workload_stats
 	send_to_ctl ./handbrake_workload
@@ -227,7 +229,7 @@ function start_expe {
 
 ## MAIN
 
-remove_bad_nodes
+#remove_bad_nodes
 ./send_img_to_nodes $HOSTING_NODES $VM_BASE_IMG $VM_BASE_IMG_DIR
 if [ ! -n "$SHARED_STORAGE" ]; then duplicate_imgs_in_nodes $HOSTING_NODES ; fi
 if [ -n "$VM_BACKING_IMG_DIR" ]; then create_backing_imgs_in_nodes $HOSTING_NODES ; fi
@@ -236,4 +238,4 @@ start_vms_in_nodes $HOSTING_NODES
 wait_for_vms_to_boot $VMS_IPS
 
 # Start experiment
-start_expe "decommissioning.sh" "$VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR $(whoami) $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)"
+#start_expe "decommissioning.sh" "$VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR $(whoami) $(ip a | grep inet | grep eth0 | awk '{print $2;}' | cut -d'/' -f1)"
