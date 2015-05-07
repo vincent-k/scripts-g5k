@@ -5,7 +5,6 @@ NODE="$1"
 BMC_USER="$2"
 BMC_MDP="$3"
 LOG_DIR="$4"
-mkdir -p "$LOG_DIR"
 
 function get_power_consumption {
 

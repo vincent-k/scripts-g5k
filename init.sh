@@ -33,7 +33,7 @@ function deploy_nodes {
 
 	# Add the NFS server node
 	if [ -n "$SHARED_STORAGE" -a -n "$NFS_SRV" ]; then
-		if [ -n $SWITCH ]; then
+		if [ -n "$SWITCH" ]; then
 			if [ -n "$RESERVATION" ]; then
 				SUBMISSION=$(oarsub -l $NETWORK=$NETWORK_NB+{"cluster='$CTL_NODE_CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/nodes=1+{"cluster='$CLUSTER'"}/switch=$SWITCH/nodes=$NB_NODES,walltime=$TIME -r "$RESERVATION" -t deploy "$(pwd)/$DEPLOY_SCRIPT \"$SHARED_STORAGE\"" 2>&1)
 			else

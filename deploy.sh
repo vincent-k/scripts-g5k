@@ -61,7 +61,7 @@ function identify_nodes {
 
 	# Define the hosting and idle nodes + NFS server
 	if [ -n "$NFS_SRV" ]; then
-		if [ -n $SWITCH -a $SWITCH -eq 2 ]; then
+		if [ -n "$SWITCH" ] && [ -a $SWITCH -eq 2 ]; then
 			NB_RACK=4
 			SRV_PER_RACK=18
 
@@ -251,7 +251,7 @@ function mount_shared_storage {
 	if [ `echo -e "$STORAGE_MOUNT" | grep Success | wc -l` -eq 0 ]; then
 		echo -e "\nCANCELING !"
 		oardel $SHARED_STORAGE
-		oardel $OAR_JOB_ID
+		#oardel $OAR_JOB_ID
 		exit
 	fi
 
@@ -287,7 +287,8 @@ function mount_nfs_storage {
 
 	# Use ram for vm_base in NFS share and start server (cluster edel => 24 Go max)
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mkdir -p /data/nfs && sync"
-	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=15G tmpfs /data/nfs"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=14G tmpfs /data/nfs"
+	#ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mkdir -p /data/nfs/$BACKING_DIR && sync"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
 	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
 	echo -e ".\nNFS Server configured and started"
@@ -295,18 +296,24 @@ function mount_nfs_storage {
 	# Mount NFS share to the CTL
 	echo -ne "Mounting share in the CTL.."
 	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs/{base_img,$BACKING_DIR} && sync"
-	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BASE_IMG_DIR"
-	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BACKING_IMG_DIR"
+	#ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs && sync"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BACKING_IMG_DIR"
+	#ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs /data/nfs"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BASE_IMG_DIR"
 	echo -e ". DONE"
 
 	# Mount NFS share to all nodes and make the share persistent	
 	echo -ne "Mounting share in all nodes.."
 	for NODE in `cat $NODES_OK`; do
+	
 		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs/{base_img,$BACKING_DIR} && sync"
-		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BASE_IMG_DIR"
-		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BACKING_IMG_DIR"
-		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t$VM_BASE_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
-		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/tmp\t$VM_BACKING_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+		#ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && sync"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BACKING_IMG_DIR"
+		#ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs /data/nfs"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BASE_IMG_DIR"
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t$VM_BACKING_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+		#ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/tmp\t$VM_BASE_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
 	done
 	wait
 	echo -e ". DONE"
@@ -321,10 +328,10 @@ function end {
 
 ## MAIN
 
-create_output_files
-deploy_ctl 3
-if [ -n "$NFS_SRV" ]; then deploy_nfs_server 3 ; fi
-deploy_nodes
+#create_output_files
+#deploy_ctl 3
+#if [ -n "$NFS_SRV" ]; then deploy_nfs_server 3 ; fi
+#deploy_nodes
 if [ -n "$SHARED_STORAGE" ]; then
 	if [ -n "$NFS_SRV" ]; then
 		if [ -n "$NFS_INFINIBAND_IF" ]; then configure_infiniband_in_nodes ; fi
@@ -334,7 +341,7 @@ fi
 if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then configure_bmc_in_nodes ; fi
 
 # Prepare nodes
-./prepare.sh $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR
+#./prepare.sh $VM_BASE_IMG_DIR $VM_BACKING_IMG_DIR
 
 echo -e "\nALL FINISHED !"
 end

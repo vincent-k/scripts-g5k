@@ -1,0 +1,56 @@
+###################### SUBMISSION #########################
+TIME='5:55'
+#RESERVATION='2015-02-17 06:00:00'
+NETWORK='slash_22'
+NETWORK_NB=1
+SHARED_STORAGE=2 # 1 chunk => 10Go
+###########################################################
+
+###################### DEPLOYMENT #########################
+DEPLOY_SCRIPT='deploy.sh'
+OUTPUT_DIR="`pwd`/files"
+
+# CTL NODE
+CTL_NODE_CLUSTER='graphene'
+IMG_CTL='debian-sid-qemu'
+CTL_NODE="$OUTPUT_DIR/ctl_node"
+
+# NFS SRV NODE
+NFS_SRV="$OUTPUT_DIR/nfs_srv"
+NFS_INFINIBAND_IF="ib0"
+
+# NODES
+NB_NODES=4
+CLUSTER='griffon'
+#SWITCH=1
+IMG_NODES='debian-sid-qemu'
+NODES_LIST="$OUTPUT_DIR/nodes_list"
+NODES_OK="$OUTPUT_DIR/nodes_ok"
+HOSTING_NODES="$OUTPUT_DIR/hosting_nodes"
+IDLE_NODES="$OUTPUT_DIR/idle_nodes"
+POWER_NODES="$OUTPUT_DIR/power_nodes"
+
+# BMC
+BMC_USER='admin'
+BMC_MDP='mdpbmc'
+
+# VMS
+VM_VCPU=1
+VM_MEM=4096
+NB_VMS_PER_NODE=1
+#VM_BASE_IMG='/home/vinkherbache/images/wheezy-x64-base.qcow2'
+#VM_BASE_IMG='/home/vinkherbache/images/debian.img'
+#VM_BASE_IMG='/home/vinkherbache/images/ubuntu_desktop.img'
+VM_BASE_IMG='/home/vinkherbache/images/ubuntu_desktop_10G.img'
+VM_BASE_IMG_NAME=$(basename $VM_BASE_IMG)
+VM_BASE_IMG_DIR="/tmp" # Put the VM base img to local nodes directory by default
+VM_PREFIX="vm-"
+BACKING_DIR="backing"
+IPS_MACS="$OUTPUT_DIR/ips_macs"
+IPS_NAMES="$OUTPUT_DIR/ips_names"
+VMS_IPS="$OUTPUT_DIR/vms_ips"
+###########################################################
+
+# Set ssh parameters
+SSH_USER="root"
+SSH_OPTS=' -o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=quiet '
