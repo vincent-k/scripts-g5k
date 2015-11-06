@@ -1,0 +1,149 @@
+#!/bin/bash
+
+# Get variables from config file
+. ./config
+
+if [ -n "$BACKING_DIR" ]; then
+	VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR";
+fi
+
+function send_to_ctl {
+
+	local SRC="$1"
+	local DEST_DIR="$2"
+
+	scp $SSH_OPTS -r $SRC $SSH_USER@$(cat $CTL_NODE):$DEST_DIR > /dev/null
+}
+
+function configure_infiniband_in_nodes {
+
+	echo -en "Configuring Infiniband to all deployed nodes.."
+
+	# Configure infiniband interface into CTL
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
+	
+	# Configure infiniband interface into NFS SRV
+	if [ -n "$NFS_SRV" ]; then
+		ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
+	fi
+
+	# Configure infiniband interface into NODES
+	for NODE in `cat $NODES_LIST`; do
+		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_infiniband $NFS_INFINIBAND_IF &
+	done
+
+	wait
+	echo -e ". DONE\n"
+}
+
+function configure_bmc_in_nodes {
+
+	echo -en "Configuring BMC in all deployed nodes.."
+
+	# Configure infiniband interface into CTL
+	ssh $SSH_USER@$(cat $CTL_NODE) $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
+	
+	# Configure infiniband interface into NFS SRV
+	if [ -n "$NFS_SRV" ]; then
+		ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
+	fi
+
+	# Configure infiniband interface into NODES
+	for NODE in `cat $NODES_LIST`; do
+		ssh $SSH_USER@$NODE $SSH_OPTS 'bash -s' < ./config_bmc $BMC_USER $BMC_MDP &
+	done
+
+	wait
+	echo -e ". DONE\n"
+}
+
+function mount_shared_storage {
+
+	# Mount storage in all nodes
+	echo -e "################# MOUNT SHARED STORAGE ###################"
+	STORAGE_MOUNT=`storage5k -a mount -j $OAR_JOB_ID 2>&1`
+	echo -e "$STORAGE_MOUNT"
+	echo -e "##########################################################\n"
+	if [ `echo -e "$STORAGE_MOUNT" | grep Success | wc -l` -eq 0 ]; then
+		echo -e "\nCANCELING !"
+		oardel $SHARED_STORAGE
+		#oardel $OAR_JOB_ID
+		exit
+	fi
+
+	# Change the remote directory to the shared storage (base img)
+	VM_BASE_IMG_DIR="/data/$(whoami)_$SHARED_STORAGE"
+
+	# Define backing img directory if necessary
+	if [ -n "$BACKING_DIR" ]; then VM_BACKING_IMG_DIR="$VM_BASE_IMG_DIR/$BACKING_DIR"; fi
+
+	# Give it more permissions
+	chmod go+rwx $VM_BASE_IMG_DIR && chmod -R go+rw $VM_BASE_IMG_DIR
+}
+
+function mount_nfs_storage {
+
+	# Change the remote directory to the shared storage (base img)
+	VM_BASE_IMG_DIR="/data/nfs/base_img"
+
+	# Define backing img directory if necessary
+	if [ -n "$BACKING_DIR" ]; then
+		VM_BACKING_IMG_DIR="/data/nfs/$BACKING_DIR"
+	fi
+
+	echo -e "################### MOUNT NFS STORAGE ####################"
+	# Use infiniband interface if declared in config file
+	if [ -n "$NFS_INFINIBAND_IF" ]; then
+		IP_NFS_SRV=$(host `cat $NFS_SRV | cut -d'.' -f 1`-$NFS_INFINIBAND_IF.`cat $NFS_SRV | cut -d'.' -f 2,3,4` | awk '{print $4;}')
+		echo -ne "Set up NFS using infiniband $NFS_INFINIBAND_IF interface.."
+	else	
+		IP_NFS_SRV=$(host `cat $NFS_SRV` | awk '{print $4;}')
+		echo -ne "Set up NFS using standard eth0 interface.."
+	fi
+
+	# Use ram for vm_base in NFS share and start server (cluster edel => 24 Go max)
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mkdir -p /data/nfs && sync"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mount -t tmpfs -o size=14G tmpfs /data/nfs"
+	#ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "mkdir -p /data/nfs/$BACKING_DIR && sync"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/rpcbind start >/dev/null 2>&1"
+	ssh $SSH_USER@$(cat $NFS_SRV) $SSH_OPTS "/etc/init.d/nfs-kernel-server start >/dev/null 2>&1"
+	echo -e ".\nNFS Server configured and started"
+
+	# Mount NFS share to the CTL
+	echo -ne "Mounting share in the CTL.."
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs/{base_img,$BACKING_DIR} && sync"
+	#ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mkdir -p /data/nfs && sync"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BACKING_IMG_DIR"
+	#ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs /data/nfs"
+	ssh $SSH_USER@`cat $CTL_NODE` $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BASE_IMG_DIR"
+	echo -e ". DONE"
+
+	# Mount NFS share to all nodes and make the share persistent	
+	echo -ne "Mounting share in all nodes.."
+	for NODE in `cat $NODES_LIST`; do
+	
+		ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs/{base_img,$BACKING_DIR} && sync"
+		#ssh $SSH_USER@$NODE $SSH_OPTS "mkdir -p /data/nfs && sync"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs $VM_BACKING_IMG_DIR"
+		#ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/data/nfs /data/nfs"
+		ssh $SSH_USER@$NODE $SSH_OPTS "mount $IP_NFS_SRV:/tmp $VM_BASE_IMG_DIR"
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t$VM_BACKING_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+		#ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/data/nfs\t/data/nfs\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+		ssh $SSH_USER@$NODE $SSH_OPTS "echo -e \"$IP_NFS_SRV:/tmp\t$VM_BASE_IMG_DIR\tnfs\trsize=8192,wsize=8192,timeo=14,intr\" >> /etc/fstab"
+	done
+	wait
+	echo -e ". DONE"
+	echo -e "##########################################################\n"
+}
+
+
+## MAIN
+
+if [ -n "$SHARED_STORAGE" ]; then
+	if [ -n "$NFS_SRV" ]; then
+		if [ -n "$NFS_INFINIBAND_IF" ]; then configure_infiniband_in_nodes ; fi
+		mount_nfs_storage
+	else mount_shared_storage ; fi
+fi
+if [ -n "$BMC_USER" -a -n "$BMC_MDP" ]; then configure_bmc_in_nodes ; fi
+
